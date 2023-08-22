@@ -4,21 +4,21 @@ import os
 import typing as tp
 from robonomicsinterface.utils import ipfs_32_bytes_to_qm_hash
 import threading
-import logging
 
 from ipfs import IPFSHelpder
 from odoo import OdooHelper
+from utils.logger import logger
 
 load_dotenv()
 
 ADMIN_ADDRESS = os.getenv("ADMIN_ADDRESS")
 WSS_ENDPOINT = os.getenv("WSS_ENDPOINT")
 
+
 odoo = OdooHelper()
 ipfs = IPFSHelpder()
 
-logger = logging.getLogger(__name__)
-logger.setLevel("DEBUG")
+_logger = logger("helpdesk")
 
 
 def _is_subscription_alive(subscriber) -> None:
@@ -44,19 +44,20 @@ def _on_new_launch(data: tp.Tuple[tp.Union[str, tp.List[str]]]):
         print(data)
         if data[1] == ADMIN_ADDRESS:
             hash = ipfs_32_bytes_to_qm_hash(data[2])
-            logger.info(f"Ipfs hash: {hash}")
+            _logger.info(f"Ipfs hash: {hash}")
             robonomics_address_from = data[0]
             email, phone, description = ipfs.parse_logs(hash)
-            logger.info(f"Data from ipfs: {email}, {phone}, {description}")
+            _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
             ticket_id = odoo.create_ticket(email, robonomics_address_from, phone, description)
-            logger.info(f"Ticket id: {ticket_id}")
+            _logger.info(f"Ticket id: {ticket_id}")
 
-    except:
-        pass
+    except Exception as e:
+        _logger.warning(f"Problem in on new launch: {e}")
 
 
 def subscribe() -> ri.Subscriber:
     account = ri.Account(remote_ws=WSS_ENDPOINT)
+    _logger.debug("Susbcribed to NewLaunch event")
     subscriber = ri.Subscriber(
         account,
         ri.SubEvent.NewLaunch,

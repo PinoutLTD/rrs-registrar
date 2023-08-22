@@ -1,7 +1,10 @@
 from dotenv import load_dotenv
 import os
 import xmlrpc.client
-import logging
+from utils.logger import logger
+
+
+logger = logger("odoo")
 
 load_dotenv()
 
@@ -10,8 +13,6 @@ ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USER = os.getenv("ODOO_USER")
 ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 
-logger = logging.getLogger("ODOO")
-logger.setLevel("INFO")
 
 class OdooHelper:
     def __init__(self) -> None:
@@ -27,11 +28,10 @@ class OdooHelper:
         try:
             common = xmlrpc.client.ServerProxy("{}/xmlrpc/2/common".format(ODOO_URL), allow_none=1)
             uid = common.authenticate(ODOO_DB, ODOO_USER, ODOO_PASSWORD, {})
-            print(uid)
             if uid == 0:
                 raise Exception("Credentials are wrong for remote system access")
             else:
-                logger.info("Odoo: Connection Stablished Successfully")
+                logger.debug("Odoo: Connection Stablished Successfully")
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:

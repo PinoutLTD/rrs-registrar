@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 import xmlrpc.client
+import base64
 from utils.logger import logger
 
 
@@ -64,3 +65,45 @@ class OdooHelper:
             ],
         )
         return ticket_id
+
+    def _read_file(self, file_path: str) -> bytes:
+        with open(file_path, "rb") as f:
+            data = f.read()
+        return data
+
+    def create_note_with_attachment(self, ticket_id, file_name, file_path):
+    # create note record
+        data = self._read_file(file_path)
+        record = self._connection.execute_kw(
+            ODOO_DB,
+            self._uid,
+            ODOO_PASSWORD,
+            "mail.message",
+            "create",
+            [
+                {
+                    "body": "Logs from user",
+                    "model": "helpdesk.ticket",
+                    "res_id": ticket_id,
+                }
+            ],
+        )
+        # Create a new record for the attachment
+        attachment = self._connection.execute_kw(
+            ODOO_DB,
+            self._uid,
+            ODOO_PASSWORD,
+            "ir.attachment",
+            "create",
+            [
+                {
+                    "name": file_name,
+                    "datas": base64.b64encode(data).decode(),
+                    "res_model": "helpdesk.ticket",
+                    "res_id": ticket_id,
+                }
+            ],
+        )
+        return self._connection.execute_kw(
+            ODOO_DB, self._uid, ODOO_PASSWORD, "mail.message", "write", [[record], {"attachment_ids": [(4, attachment)]}]
+        )

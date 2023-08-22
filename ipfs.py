@@ -8,12 +8,6 @@ logs_name = ["issue_description.json", "home-assistant.log", "trace.saved_traces
 
 
 class IPFSHelpder:
-    def __init__(self) -> None:
-        print(_logger)
-        self.test()
-
-    def test(self):
-        _logger.debug("test ipfs")
 
     def _download_logs_dir(self, hash: str) -> str:
         self.temp_dir = tempfile.mkdtemp()
@@ -28,7 +22,6 @@ class IPFSHelpder:
                     _logger.info("IPFS: Succesfully download logs from ipfs.")
                     with open(f"{self.temp_dir}/{log}", "wb") as f:
                         f.write(response.content)
-                        print(response.content)
                 elif response.status_code == 404:
                     pass
                 else:

@@ -50,6 +50,16 @@ def _on_new_launch(data: tp.Tuple[tp.Union[str, tp.List[str]]]):
             _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
             ticket_id = odoo.create_ticket(email, robonomics_address_from, phone, description)
             _logger.info(f"Ticket id: {ticket_id}")
+            if len(os.listdir(ipfs.temp_dir)) > 1:
+                for f in os.listdir(ipfs.temp_dir):
+                    if f == "issue_description.json":
+                        pass
+                    else:
+                        file_name = f
+                        file_path = f"{ipfs.temp_dir}/{f}"
+                        odoo.create_note_with_attachment(ticket_id, file_name, file_path)
+            ipfs.clean_temp_dir()
+
 
     except Exception as e:
         _logger.warning(f"Problem in on new launch: {e}")

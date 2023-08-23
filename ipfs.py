@@ -1,6 +1,8 @@
 import tempfile
 import json
 import requests
+import shutil
+import threading
 from utils.logger import logger
 
 _logger = logger("ipfs")
@@ -13,6 +15,7 @@ class IPFSHelpder:
         self.temp_dir = tempfile.mkdtemp()
         _logger.info(f"Temp dir: {self.temp_dir}")
         print(f"Temp dir: {self.temp_dir}")
+        print(f"Thread in download logs: {threading.current_thread()}")
 
         for log in logs_name:
             try:
@@ -20,20 +23,24 @@ class IPFSHelpder:
                 response = requests.get(f"https://ipfs.io/ipfs/{hash}/{log}")
                 if response.status_code == 200:
                     _logger.info("IPFS: Succesfully download logs from ipfs.")
+                    print("IPFS: Succesfully download logs from ipfs.")
                     with open(f"{self.temp_dir}/{log}", "wb") as f:
                         f.write(response.content)
                 elif response.status_code == 404:
                     pass
                 else:
                     _logger.warning(f"Couldn't download logs from ipfs with response: {response}")
+                    print(f"Couldn't download logs from ipfs with response: {response}")
 
             except Exception as e:
                 _logger.warning(f"Couldn't download logs {log} from ipfs: {e}")
+                print(f"Couldn't download logs {log} from ipfs: {e}")
 
     def parse_logs(self, hash) -> tuple:
         self._download_logs_dir(hash)
         _logger.info("Parsing logs...")
         print("Parsing logs...")
+        print(f"Thread in parsing: {threading.current_thread()}")
         with open(f"{self.temp_dir}/issue_description.json") as f:
             issue = json.load(f)
             email = issue["e-mail"]
@@ -42,4 +49,4 @@ class IPFSHelpder:
         return email, phone, description
 
     def clean_temp_dir(self) -> None:
-        self.temp_dir.cleanup()
+        shutil.rmtree(self.temp_dir)

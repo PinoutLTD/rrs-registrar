@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import xmlrpc.client
 import base64
+import threading
 from utils.logger import logger
 
 
@@ -46,7 +47,7 @@ class OdooHelper:
         channel_id = 5
         name = f"Issue from {robonomics_address}"
         description = f"Issue from HA: {description}"
-        partner_email = email
+        logger.debug(f"Thread in create_ticket: {threading.current_thread()}")
 
         ticket_id = self._connection.execute_kw(
             ODOO_DB,
@@ -60,7 +61,8 @@ class OdooHelper:
                     "description": description,
                     "priority": priority,
                     "channel_id": channel_id,
-                    "partner_email": partner_email
+                    "partner_email": email,
+                    "phone": phone
                 }
             ],
         )

@@ -34,7 +34,7 @@ def _resubscribe(subscriber) -> None:
     subscribe()
 
 def _handle_data(ipfs_hash: str, robonomics_address_from: str) -> None:
-    ipfs = IPFSHelpder()
+    ipfs = IPFSHelpder(robonomics_address_from)
     _logger.debug(f"Thread in handle data: {threading.current_thread()}")
     email, phone, description = ipfs.parse_logs(ipfs_hash)
     _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")

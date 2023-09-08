@@ -21,6 +21,11 @@ _logger = logger("helpdesk")
 
 
 def _is_subscription_alive(subscriber) -> None:
+    """Ckeck every 15 sec if subscription is alive
+
+    :param subscriber: Subscriber object
+    """
+
     threading.Timer(15, _is_subscription_alive, [subscriber]).start()
     if subscriber._subscription.is_alive():
         return
@@ -28,14 +33,23 @@ def _is_subscription_alive(subscriber) -> None:
 
 
 def _resubscribe(subscriber) -> None:
-    """Close the subscription and create a new" one"""
+    """Close the subscription and create a new one
+
+    :param subscriber: Subscriber object
+    """
+
     print("resubscribe")
     subscriber.cancel()
     subscribe()
 
+
 def _handle_data(ipfs_hash: str, robonomics_address_from: str) -> None:
+    """Handle data from the launch: create ticket and add logs
+
+    :param robonomics_address_from: User's address in Robonomics parachain
+    """
+
     ipfs = IPFSHelpder(robonomics_address_from)
-    _logger.debug(f"Thread in handle data: {threading.current_thread()}")
     email, phone, description = ipfs.parse_logs(ipfs_hash)
     _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
     ticket_id = odoo.create_ticket(email, robonomics_address_from, phone, description)
@@ -56,24 +70,27 @@ def _on_new_launch(data: tp.Tuple[tp.Union[str, tp.List[str]]]) -> None:
 
     :param data: Data from the launch
     """
+
     try:
-        print(data)
-        _logger.debug(f"Thread in callback: {threading.current_thread()}")
         if data[1] == ADMIN_ADDRESS:
             hash = ipfs_32_bytes_to_qm_hash(data[2])
             _logger.info(f"Ipfs hash: {hash}")
             robonomics_address_from = data[0]
-            threading.Thread(target=_handle_data, args=(hash, robonomics_address_from,)).start()
-            for thread in threading.enumerate(): 
-                print(thread.name)
-
+            threading.Thread(
+                target=_handle_data,
+                args=(
+                    hash,
+                    robonomics_address_from,
+                ),
+            ).start()
 
     except Exception as e:
         _logger.warning(f"Problem in on new launch: {e}")
 
 
 def subscribe() -> ri.Subscriber:
-    _logger.debug(f"Thread in subscriber: {threading.current_thread()}")
+    """Subscribe to the NewLaunch event"""
+
     account = ri.Account(remote_ws=WSS_ENDPOINT)
     _logger.debug("Susbcribed to NewLaunch event")
     subscriber = ri.Subscriber(

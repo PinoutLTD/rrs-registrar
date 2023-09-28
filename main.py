@@ -4,6 +4,7 @@ import os
 import typing as tp
 from robonomicsinterface.utils import ipfs_32_bytes_to_qm_hash
 import threading
+from tenacity import *
 
 from ipfs import IPFSHelpder
 from odoo import OdooHelper
@@ -43,6 +44,16 @@ def _resubscribe(subscriber) -> None:
     subscribe()
 
 
+@retry(wait=wait_fixed(5))
+def _create_ticket(email, robonomics_address_from, phone, description):
+    _logger.debug("Creating ticket...")
+    ticket_id = odoo.create_ticket(email, robonomics_address_from, phone, description)
+    print(ticket_id)
+    if not ticket_id:
+        raise Exception("Failed to create ticket")
+    return ticket_id
+
+
 def _handle_data(ipfs_hash: str, robonomics_address_from: str) -> None:
     """Handle data from the launch: create ticket and add logs
 
@@ -52,7 +63,7 @@ def _handle_data(ipfs_hash: str, robonomics_address_from: str) -> None:
     ipfs = IPFSHelpder(robonomics_address_from)
     email, phone, description = ipfs.parse_logs(ipfs_hash)
     _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
-    ticket_id = odoo.create_ticket(email, robonomics_address_from, phone, description)
+    ticket_id = _create_ticket(email, robonomics_address_from, phone, description)
     _logger.info(f"Ticket id: {ticket_id}")
     if len(os.listdir(ipfs.temp_dir)) > 1:
         for f in os.listdir(ipfs.temp_dir):

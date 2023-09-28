@@ -6,7 +6,7 @@ import threading
 from utils.logger import logger
 
 
-logger = logger("odoo")
+_logger = logger("odoo")
 
 load_dotenv()
 
@@ -32,11 +32,11 @@ class OdooHelper:
             if uid == 0:
                 raise Exception("Credentials are wrong for remote system access")
             else:
-                logger.debug("Odoo: Connection Stablished Successfully")
+                _logger.debug("Odoo: Connection Stablished Successfully")
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:
-            logger.warning(f"Couldn't connect to the db: {e}")
+            _logger.warning(f"Couldn't connect to the db: {e}")
 
     def create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
         """Create ticket in Helpdesk module
@@ -53,25 +53,29 @@ class OdooHelper:
         channel_id = 5
         name = f"Issue from {robonomics_address}"
         description = f"Issue from HA: {description}"
-
-        ticket_id = self._connection.execute_kw(
-            ODOO_DB,
-            self._uid,
-            ODOO_PASSWORD,
-            "helpdesk.ticket",
-            "create",
-            [
-                {
-                    "name": name,
-                    "description": description,
-                    "priority": priority,
-                    "channel_id": channel_id,
-                    "partner_email": email,
-                    "phone": phone,
-                }
-            ],
-        )
-        return ticket_id
+        try:
+            ticket_id = self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "helpdesk.ticket",
+                "create",
+                [
+                    {
+                        "name": name,
+                        "description": description,
+                        "priority": priority,
+                        "channel_id": channel_id,
+                        "partner_email": email,
+                        "phone": phone,
+                    }
+                ],
+            )
+            return ticket_id
+        except Exception as e:
+            _logger.warning(f"Couldn't create ticket: {e}")
+            print(e)
+            return None
 
     def _read_file(self, file_path: str) -> bytes:
         """Read file and return its content

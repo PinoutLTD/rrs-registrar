@@ -5,6 +5,7 @@ import requests
 import shutil
 import threading
 import os
+from tenacity import *
 from utils.logger import logger
 from utils.decrypt_msg import decrypt_message
 
@@ -21,6 +22,7 @@ class IPFSHelpder:
         self.sender_public_key = sender_public_key
         self.temp_dir = tempfile.mkdtemp()
 
+    @retry(wait=wait_fixed(5))
     def _download_file(self, hash: str, file_name: str) -> None:
         """Download file from IPFS
 
@@ -30,6 +32,7 @@ class IPFSHelpder:
 
         try:
             _logger.debug(f"Downloading file {file_name} from IPFS...")
+            print(f"Downloading file {file_name} from IPFS...")
             response = requests.get(f"https://ipfs.io/ipfs/{hash}/{file_name}")
             if response.status_code == 200:
                 _logger.info("IPFS: Succesfully download logs from ipfs.")
@@ -42,10 +45,12 @@ class IPFSHelpder:
             else:
                 _logger.warning(f"Couldn't download logs from ipfs with response: {response}")
                 print(f"Couldn't download logs from ipfs with response: {response}")
+                raise Exception("Couldn't download logs from ipfs")
 
         except Exception as e:
             _logger.warning(f"Couldn't download logs {file_name} from ipfs: {e}")
             print(f"Couldn't download logs {file_name} from ipfs: {e}")
+            raise(e)
 
     def _download_logs(self, hash: str) -> None:
         """Download all the files from IPFS.

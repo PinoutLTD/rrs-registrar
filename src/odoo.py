@@ -35,13 +35,36 @@ class OdooHelper:
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:
-            self._logger.warning(f"Couldn't connect to the db: {e}")
+            self._logger.warning(f"Odoo: Couldn't connect to the db: {e}")
+
+    
+    def create_rrs_user(self, email, robonomics_address):
+        self._logger.debug("Creating user...")
+        try:
+            user_id = self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "rrs.register",
+                "create",
+                [
+                    {
+                        "address": robonomics_address,
+                        "customer_email": email,
+                    }
+                ],
+            )
+            return user_id
+        except Exception as e:
+            self._logger.warning(f"Odoo: Couldn't create ticket: {e}")
+            return None
+
     
     @retry(wait=wait_fixed(5))
     def create_ticket(self, email, robonomics_address_from, phone, description):
         """Creating ticket until it will be created."""
         
-        self._logger.debug("Creating ticket...")
+        self._logger.debug("Odoo: Creating ticket...")
         ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
         print(ticket_id)
         if not ticket_id:

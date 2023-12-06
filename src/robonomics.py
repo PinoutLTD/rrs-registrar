@@ -86,7 +86,7 @@ class RobonomicsHelper:
     def _is_subscription_alive(self) -> None:
         """Ckeck every 15 sec if subscription is alive"""
 
-        threading.Timer(15, self._is_subscription_alive, [self.subscriber]).start()
+        threading.Timer(15, self._is_subscription_alive,).start()
         if self.subscriber._subscription.is_alive():
             return
         self._resubscribe()

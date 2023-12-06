@@ -12,18 +12,19 @@ load_dotenv()
 
 ADMIN_ADDRESS = os.getenv("ADMIN_ADDRESS")
 WSS_ENDPOINT = os.getenv("WSS_ENDPOINT")
-_logger = logger("robonomics")
+
 
 
 class RobonomicsHelper:
     def __init__(self, odoo) -> None:
         self.account = ri.Account(remote_ws=WSS_ENDPOINT)
+        self._logger = logger("robonomics")
         self.odoo = odoo
     
     def subscribe(self) -> ri.Subscriber:
         """Subscribe to the NewLaunch event"""
 
-        _logger.debug("Susbcribed to NewLaunch event")
+        self._logger.debug("Robonomics: Susbcribed to NewLaunch event")
         self.subscriber = ri.Subscriber(
             self.account,
             ri.SubEvent.NewLaunch,
@@ -40,7 +41,7 @@ class RobonomicsHelper:
         try:
             if data[1] == ADMIN_ADDRESS:
                 hash = ipfs_32_bytes_to_qm_hash(data[2])
-                _logger.info(f"Ipfs hash: {hash}")
+                self._logger.info(f"Robonomics:  Ipfs hash: {hash}")
                 robonomics_address_from = data[0]
                 threading.Thread(
                     target=self._handle_data,
@@ -51,7 +52,7 @@ class RobonomicsHelper:
                 ).start()
 
         except Exception as e:
-            _logger.warning(f"Problem in on new launch: {e}")
+            self._logger.warning(f"Robonomics: Problem in on new launch: {e}")
     
     def _handle_data(self, ipfs_hash: str, robonomics_address_from: str) -> None:
         """Handle data from the launch: create ticket and add logs
@@ -61,7 +62,7 @@ class RobonomicsHelper:
 
         ipfs = IPFSHelpder(robonomics_address_from)
         email, phone, description = ipfs.parse_logs(ipfs_hash)
-        _logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
+        self._logger.debug(f"Robonomics: Data from ipfs: {email}, {phone}, {description}")
         ticket_id = self.odoo.create_ticket(email, robonomics_address_from, phone, description)
         if len(os.listdir(ipfs.temp_dir)) > 1:
             for f in os.listdir(ipfs.temp_dir):
@@ -77,7 +78,7 @@ class RobonomicsHelper:
     def _resubscribe(self) -> None:
         """Close the subscription and create a new one"""
 
-        print("resubscribe")
+        self._logger("Robonomics: resubscribe")
         self.subscriber.cancel()
         self.subscribe()
     

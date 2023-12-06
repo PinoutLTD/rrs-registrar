@@ -6,8 +6,6 @@ from utils.logger import logger
 from tenacity import *
 
 
-_logger = logger("odoo")
-
 load_dotenv()
 
 ODOO_URL = os.getenv("ODOO_URL")
@@ -18,6 +16,7 @@ ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 
 class OdooHelper:
     def __init__(self) -> None:
+        self._logger = logger("odoo")
         self._connection, self._uid = self._connect_to_db()
 
     def _connect_to_db(self):
@@ -32,17 +31,17 @@ class OdooHelper:
             if uid == 0:
                 raise Exception("Credentials are wrong for remote system access")
             else:
-                _logger.debug("Odoo: Connection Stablished Successfully")
+                self._logger.debug("Odoo: Connection Stablished Successfully")
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:
-            _logger.warning(f"Couldn't connect to the db: {e}")
+            self._logger.warning(f"Couldn't connect to the db: {e}")
     
     @retry(wait=wait_fixed(5))
     def create_ticket(self, email, robonomics_address_from, phone, description):
         """Creating ticket until it will be created."""
         
-        _logger.debug("Creating ticket...")
+        self._logger.debug("Creating ticket...")
         ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
         print(ticket_id)
         if not ticket_id:
@@ -84,7 +83,7 @@ class OdooHelper:
             )
             return ticket_id
         except Exception as e:
-            _logger.warning(f"Couldn't create ticket: {e}")
+            self._logger.warning(f"Couldn't create ticket: {e}")
             print(e)
             return None
 

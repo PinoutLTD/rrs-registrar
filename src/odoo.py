@@ -2,8 +2,8 @@ from dotenv import load_dotenv
 import os
 import xmlrpc.client
 import base64
-import threading
 from utils.logger import logger
+from tenacity import *
 
 
 _logger = logger("odoo")
@@ -37,9 +37,20 @@ class OdooHelper:
                 return connection, uid
         except Exception as e:
             _logger.warning(f"Couldn't connect to the db: {e}")
+    
+    @retry(wait=wait_fixed(5))
+    def create_ticket(self, email, robonomics_address_from, phone, description):
+        """Creating ticket until it will be created."""
+        
+        _logger.debug("Creating ticket...")
+        ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
+        print(ticket_id)
+        if not ticket_id:
+            raise Exception("Failed to create ticket")
+        return ticket_id
 
-    def create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
-        """Create ticket in Helpdesk module
+    def _create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
+        """Internal methods. Creates ticket in Helpdesk module
 
         :param email: Customer's email address
         :param robonomics_address: Customer's address in Robonomics parachain

@@ -45,6 +45,7 @@ class WSClient:
             robonomics_address = json_message["address"]
             encrypted_email = decrypt_message(decrypted_email, robonomics_address, ADMIN_SEED)
             self.odoo.create_rrs_user(encrypted_email, robonomics_address)
+            self.odoo.create_note_with_attachment(robonomics_address)
 
     def _on_error(self, ws, error):
         self._logger.error(f"{error}")

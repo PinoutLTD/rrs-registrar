@@ -1,80 +1,32 @@
-from dotenv import load_dotenv
-import os
-import xmlrpc.client
-import base64
-from utils.logger import Logger
 from tenacity import *
+from .odoo_internal import OdooHelper
 
 
-load_dotenv()
-
-ODOO_URL = os.getenv("ODOO_URL")
-ODOO_DB = os.getenv("ODOO_DB")
-ODOO_USER = os.getenv("ODOO_USER")
-ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
-
-
-class OdooHelper:
+class OdooProxy:
+    """Proxy to work with Odoo. Uses OdooHelper class and exapnds it with retrying decorators."""
     def __init__(self) -> None:
-        self._logger = Logger("odoo")
-        self._connection, self._uid = self._connect_to_db()
+        self.odoo_helper = OdooHelper()
 
-    def _connect_to_db(self):
-        """Connect to Odoo db
+    @retry(wait=wait_fixed(5))
+    def create_rrs_user(self, email:str, robonomics_address: str) -> int:
+        """Creats user until it will be created.
+        :param email: Customer's email address
+        :param robonomics_address: Customer's address in Robonomics parachain
 
-        :return: Proxy to the object endpoint to call methods of the odoo models.
+        :return: User id
         """
+        self.odoo_helper._logger.debug("Creating rrs user...")
+        user_id = self.odoo_helper.create_rrs_user(email, robonomics_address)
+        if not user_id:
+            raise Exception("Failed to create rrs user")
+        self.odoo_helper._logger.debug(f"Rrs user created. User id: {user_id}")
+        return user_id
 
-        try:
-            common = xmlrpc.client.ServerProxy("{}/xmlrpc/2/common".format(ODOO_URL), allow_none=1)
-            uid = common.authenticate(ODOO_DB, ODOO_USER, ODOO_PASSWORD, {})
-            if uid == 0:
-                raise Exception("Credentials are wrong for remote system access")
-            else:
-                self._logger.debug("Connection Stablished Successfully")
-                connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
-                return connection, uid
-        except Exception as e:
-            self._logger.error(f"Couldn't connect to the db: {e}")
-
-    
-    def create_rrs_user(self, email, robonomics_address):
-        self._logger.debug("Creating user...")
-        try:
-            user_id = self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "rrs.register",
-                "create",
-                [
-                    {
-                        "address": robonomics_address,
-                        "customer_email": email,
-                    }
-                ],
-            )
-            self._logger.debug(f"User created. User id: {user_id}")
-            return user_id
-        except Exception as e:
-            self._logger.error(f"Couldn't create user: {e}")
-            return None
 
     
     @retry(wait=wait_fixed(5))
-    def create_ticket(self, email, robonomics_address_from, phone, description):
-        """Creating ticket until it will be created."""
-        
-        self._logger.debug("Creating ticket...")
-        ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
-        self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
-        if not ticket_id:
-            raise Exception("Failed to create ticket")
-        return ticket_id
-
-    def _create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
-        """Internal methods. Creates ticket in Helpdesk module
-
+    def create_ticket(self, email: str, robonomics_address_from: str, phone, description: str) -> int:
+        """Creats ticket until it will be created.
         :param email: Customer's email address
         :param robonomics_address: Customer's address in Robonomics parachain
         :param phone: Customer's phone number
@@ -82,90 +34,37 @@ class OdooHelper:
 
         :return: Ticket id
         """
+        self.odoo_helper._logger.debug("Creating ticket...")
+        ticket_id = self.odoo_helper.create_ticket(email, robonomics_address_from, phone, description)
+        if not ticket_id:
+            raise Exception("Failed to create ticket")
+        self.odoo_helper._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
+        return ticket_id
 
-        priority = "3"
-        channel_id = 5
-        name = f"Issue from {robonomics_address}"
-        description = f"Issue from HA: {description}"
-        try:
-            ticket_id = self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "helpdesk.ticket",
-                "create",
-                [
-                    {
-                        "name": name,
-                        "description": description,
-                        "priority": priority,
-                        "channel_id": channel_id,
-                        "partner_email": email,
-                        "phone": phone,
-                    }
-                ],
-            )
-            return ticket_id
-        except Exception as e:
-            self._logger.error(f"Couldn't create ticket: {e}")
-            print(e)
-            return None
-
-    def _read_file(self, file_path: str) -> bytes:
-        """Read file and return its content
-
-        :param file_path: Path to the file to read
-        :return: File's content in bytes
-        """
-
-        with open(file_path, "rb") as f:
-            data = f.read()
-        return data
-
-    def create_note_with_attachment(self, ticket_id: int, file_name: str, file_path: str) -> bool:
-        """Create log with attachment in Odoo using logs from the customer
-
+    @retry(wait=wait_fixed(5))
+    def create_note_with_attachment(self, ticket_id: int, file_name: str, file_path: str) -> None:
+        """Creats note until it will be created.
         :param ticket_id: Id of the ticket to which logs will be added
         :param file_name: Name of the file
         :param file_path: Path to the file
 
         :return: If the log note was created or no
         """
-        data = self._read_file(file_path)
-        record = self._connection.execute_kw(
-            ODOO_DB,
-            self._uid,
-            ODOO_PASSWORD,
-            "mail.message",
-            "create",
-            [
-                {
-                    "body": "Logs from user",
-                    "model": "helpdesk.ticket",
-                    "res_id": ticket_id,
-                }
-            ],
-        )
-        attachment = self._connection.execute_kw(
-            ODOO_DB,
-            self._uid,
-            ODOO_PASSWORD,
-            "ir.attachment",
-            "create",
-            [
-                {
-                    "name": file_name,
-                    "datas": base64.b64encode(data).decode(),
-                    "res_model": "helpdesk.ticket",
-                    "res_id": ticket_id,
-                }
-            ],
-        )
-        return self._connection.execute_kw(
-            ODOO_DB,
-            self._uid,
-            ODOO_PASSWORD,
-            "mail.message",
-            "write",
-            [[record], {"attachment_ids": [(4, attachment)]}],
-        )
+        self.odoo_helper._logger.debug("Creating note...")
+        is_note_created = self.odoo_helper.create_note_with_attachment(ticket_id, file_name, file_path)
+        if not is_note_created:
+            raise Exception("Failed to create note")
+        self.odoo_helper._logger.debug(f"Note created.")
+
+    @retry(wait=wait_fixed(5))
+    def create_note_with_attachment(self, address: str) -> int:
+        """Creats invoice until it will be created.
+        :param address: Customer's address in Robonomics parachain for the reference
+        
+        :return: Invoice id
+        """
+        self.odoo_helper._logger.debug("Creating invoice...")
+        invoice_id = self.odoo_helper.create_invoice(address)
+        if not invoice_id:
+            raise Exception("Failed to create invoice")
+        self.odoo_helper._logger.debug(f"Invoice created.")

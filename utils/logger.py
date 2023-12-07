@@ -1,30 +1,20 @@
-import logging.config
 import sys
+from datetime import datetime
+from termcolor import colored
 
-def logger(name: str) -> logging.Logger:
-    LOGGING_CONFIG = {
-        "version": 1,
-        "formatters": {
-            "standart": {"format": "%(asctime)s - %(levelname)s - %(message)s"},
-        },
-        "handlers": {
-            "console": {
-                "level": "DEBUG",
-                "formatter": "standart",
-                "class": "logging.StreamHandler",
-                "stream": sys.stdout,
-            },
-        },
-        "loggers": {
-            name: {
-                "handlers": ["console"],
-                "level": "DEBUG",
-                "propagate": False,
-            },
-        },
-    }
-
-    logging.config.dictConfig(LOGGING_CONFIG)
-    logger = logging.getLogger(name)
-    return logger
+class Logger:
+    def __init__(self, name: str):
+        self.name = name
+    
+    def info(self, msg: str):
+        current_dateTime = datetime.now()
+        print(f"{current_dateTime} INFO {self.name}: {msg}")
+    
+    def debug(self, msg: str):
+        current_dateTime = datetime.now()
+        print(f"{current_dateTime} DEBUG {self.name}: {msg}")
+    
+    def error(self, msg: str):
+        current_dateTime = datetime.now()
+        print(colored(f"{current_dateTime} INFO {self.name}: {msg}", "red"))
     

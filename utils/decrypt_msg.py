@@ -3,7 +3,7 @@ from substrateinterface import KeypairType, Keypair
 
 
 def decrypt_message(encrypted_text: str, sender_address: str, admin_seed: str) -> bytes:
-    """Decrypting data in IPFS using admin private key and sender public key.
+    """Decrypting data using admin private key and sender public key.
 
     :param encrypted_text: Encypted text from the file
     :param sender_address: Sender's address

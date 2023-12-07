@@ -2,11 +2,9 @@ from dotenv import load_dotenv
 import os
 import xmlrpc.client
 import base64
-import threading
-from utils.logger import logger
+from utils.logger import Logger
+from tenacity import *
 
-
-_logger = logger("odoo")
 
 load_dotenv()
 
@@ -18,6 +16,7 @@ ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 
 class OdooHelper:
     def __init__(self) -> None:
+        self._logger = Logger("odoo")
         self._connection, self._uid = self._connect_to_db()
 
     def _connect_to_db(self):
@@ -32,14 +31,49 @@ class OdooHelper:
             if uid == 0:
                 raise Exception("Credentials are wrong for remote system access")
             else:
-                _logger.debug("Odoo: Connection Stablished Successfully")
+                self._logger.debug("Connection Stablished Successfully")
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:
-            _logger.warning(f"Couldn't connect to the db: {e}")
+            self._logger.error(f"Couldn't connect to the db: {e}")
 
-    def create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
-        """Create ticket in Helpdesk module
+    
+    def create_rrs_user(self, email, robonomics_address):
+        self._logger.debug("Creating user...")
+        try:
+            user_id = self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "rrs.register",
+                "create",
+                [
+                    {
+                        "address": robonomics_address,
+                        "customer_email": email,
+                    }
+                ],
+            )
+            self._logger.debug(f"User created. User id: {user_id}")
+            return user_id
+        except Exception as e:
+            self._logger.error(f"Couldn't create user: {e}")
+            return None
+
+    
+    @retry(wait=wait_fixed(5))
+    def create_ticket(self, email, robonomics_address_from, phone, description):
+        """Creating ticket until it will be created."""
+        
+        self._logger.debug("Creating ticket...")
+        ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
+        self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
+        if not ticket_id:
+            raise Exception("Failed to create ticket")
+        return ticket_id
+
+    def _create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> int:
+        """Internal methods. Creates ticket in Helpdesk module
 
         :param email: Customer's email address
         :param robonomics_address: Customer's address in Robonomics parachain
@@ -73,7 +107,7 @@ class OdooHelper:
             )
             return ticket_id
         except Exception as e:
-            _logger.warning(f"Couldn't create ticket: {e}")
+            self._logger.error(f"Couldn't create ticket: {e}")
             print(e)
             return None
 

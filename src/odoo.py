@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import xmlrpc.client
 import base64
-from utils.logger import logger
+from utils.logger import Logger
 from tenacity import *
 
 
@@ -16,7 +16,7 @@ ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
 
 class OdooHelper:
     def __init__(self) -> None:
-        self._logger = logger("odoo")
+        self._logger = Logger("odoo")
         self._connection, self._uid = self._connect_to_db()
 
     def _connect_to_db(self):
@@ -31,11 +31,11 @@ class OdooHelper:
             if uid == 0:
                 raise Exception("Credentials are wrong for remote system access")
             else:
-                self._logger.debug("Odoo: Connection Stablished Successfully")
+                self._logger.debug("Connection Stablished Successfully")
                 connection = xmlrpc.client.ServerProxy("{}/xmlrpc/2/object".format(ODOO_URL))
                 return connection, uid
         except Exception as e:
-            self._logger.warning(f"Odoo: Couldn't connect to the db: {e}")
+            self._logger.error(f"Couldn't connect to the db: {e}")
 
     
     def create_rrs_user(self, email, robonomics_address):
@@ -54,9 +54,10 @@ class OdooHelper:
                     }
                 ],
             )
+            self._logger.debug(f"User created. User id: {user_id}")
             return user_id
         except Exception as e:
-            self._logger.warning(f"Odoo: Couldn't create ticket: {e}")
+            self._logger.error(f"Couldn't create user: {e}")
             return None
 
     
@@ -64,9 +65,9 @@ class OdooHelper:
     def create_ticket(self, email, robonomics_address_from, phone, description):
         """Creating ticket until it will be created."""
         
-        self._logger.debug("Odoo: Creating ticket...")
+        self._logger.debug("Creating ticket...")
         ticket_id = self._create_ticket(email, robonomics_address_from, phone, description)
-        print(ticket_id)
+        self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
         if not ticket_id:
             raise Exception("Failed to create ticket")
         return ticket_id
@@ -106,7 +107,7 @@ class OdooHelper:
             )
             return ticket_id
         except Exception as e:
-            self._logger.warning(f"Couldn't create ticket: {e}")
+            self._logger.error(f"Couldn't create ticket: {e}")
             print(e)
             return None
 

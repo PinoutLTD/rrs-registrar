@@ -6,7 +6,7 @@ import threading
 import os
 
 from src.ipfs import IPFSHelpder
-from utils.logger import logger
+from utils.logger import Logger
 
 load_dotenv()
 
@@ -18,13 +18,13 @@ WSS_ENDPOINT = os.getenv("WSS_ENDPOINT")
 class RobonomicsHelper:
     def __init__(self, odoo) -> None:
         self.account = ri.Account(remote_ws=WSS_ENDPOINT)
-        self._logger = logger("robonomics")
+        self._logger = Logger("robonomics")
         self.odoo = odoo
     
     def subscribe(self) -> ri.Subscriber:
         """Subscribe to the NewLaunch event"""
 
-        self._logger.debug("Robonomics: Susbcribed to NewLaunch event")
+        self._logger.debug("Susbcribed to NewLaunch event")
         self.subscriber = ri.Subscriber(
             self.account,
             ri.SubEvent.NewLaunch,
@@ -52,7 +52,7 @@ class RobonomicsHelper:
                 ).start()
 
         except Exception as e:
-            self._logger.warning(f"Robonomics: Problem in on new launch: {e}")
+            self._logger.error(f"Problem in on new launch: {e}")
     
     def _handle_data(self, ipfs_hash: str, robonomics_address_from: str) -> None:
         """Handle data from the launch: create ticket and add logs
@@ -62,7 +62,7 @@ class RobonomicsHelper:
 
         ipfs = IPFSHelpder(robonomics_address_from)
         email, phone, description = ipfs.parse_logs(ipfs_hash)
-        self._logger.debug(f"Robonomics: Data from ipfs: {email}, {phone}, {description}")
+        self._logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
         ticket_id = self.odoo.create_ticket(email, robonomics_address_from, phone, description)
         if len(os.listdir(ipfs.temp_dir)) > 1:
             for f in os.listdir(ipfs.temp_dir):
@@ -78,7 +78,7 @@ class RobonomicsHelper:
     def _resubscribe(self) -> None:
         """Close the subscription and create a new one"""
 
-        self._logger("Robonomics: resubscribe")
+        self._logger.debug("Resubscribe")
         self.subscriber.cancel()
         self.subscribe()
     

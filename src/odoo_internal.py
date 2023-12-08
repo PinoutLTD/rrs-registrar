@@ -173,7 +173,7 @@ class OdooHelper:
     
 
     def create_customer(self, email: str, address: str) -> tp.Optional[int]:
-        """Creates a useer in invoicing moduleif it doesn't exist. Used in an invoice in partner_id to 
+        """Creates a useer in invoicing module if it doesn't exist. Used in an invoice in partner_id to 
         be able to post the invoice.
 
         :param email: Customer's email address

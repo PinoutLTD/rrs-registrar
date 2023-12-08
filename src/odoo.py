@@ -1,7 +1,5 @@
 from .odoo_internal import OdooHelper
 from tenacity import *
-import typing as tp
-
 
 
 class OdooProxy:

@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
 import os
+import base64
 import xmlrpc.client
 import typing as tp
+from datetime import datetime
 from utils.logger import Logger
 from utils.read_file import read_file
 
@@ -11,7 +13,8 @@ ODOO_URL = os.getenv("ODOO_URL")
 ODOO_DB = os.getenv("ODOO_DB")
 ODOO_USER = os.getenv("ODOO_USER")
 ODOO_PASSWORD = os.getenv("ODOO_PASSWORD")
-ODOO_PRODUCT_SABSCRIPTION_ID = os.getenv("ODOO_PRODUCT_SABSCRIPTION_ID")
+ODOO_PRODUCT_SUBSCRIPTION_ID = os.getenv("ODOO_PRODUCT_SUBSCRIPTION_ID")
+SUBSCRIPTION_PRICE=os.getenv("SUBSCRIPTION_PRICE")
 
 class OdooHelper:
     def __init__(self):
@@ -151,10 +154,61 @@ class OdooHelper:
             self._logger.error(f"Couldn't create note: {e}")
             return None
     
-    def create_invoice(self, address: str) -> tp.Optional[int]:
+    def _check_if_customer_exists(self, address: str) -> tp.Union[int, bool]:
+        """Looking for a partner id by the parachain address. This id is used in `create_invoice` function to 
+        add a `customer` field.  
+        :param address: Customer's address in Robonomics parachain
+
+        :return: The partner id or false.
+        """
+        id = self._connection.execute_kw(
+            ODOO_DB,
+            self._uid,
+            ODOO_PASSWORD,
+            "res.partner", 
+            "search", 
+            [[("name", "=", address)]])
+        self._logger.debug(f"Find ustomer with id: {id}")
+        return id
+    
+
+    def create_customer(self, email: str, address: str) -> tp.Optional[int]:
+        """Creates a useer in invoicing moduleif it doesn't exist. Used in an invoice in partner_id to 
+        be able to post the invoice.
+
+        :param email: Customer's email address
+        :param address: Customer's address in Robonomics parachain
+
+        :return: Customer id.
+        """
+        try:
+            customer_id = self._check_if_customer_exists(address)
+            if customer_id: 
+                return customer_id[0]
+            customer_id = self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "res.partner",
+                "create",
+                [
+                    {
+                        "name": address,
+                        "is_company": False,
+                        "email": email,
+                    }
+                ],
+            )
+            self._logger.debug(f"Create customer with id: {customer_id}")
+            return customer_id
+        except Exception as e:
+            self._logger.error(f"Couldn't create customer: {e}")
+            return None
+    
+    def create_invoice(self, address: str, customer_id: str) -> tp.Optional[int]:
         """Creates invoice in Invoicing module.
         :param address: Customer's address in Robonomics parachain for the reference
-        
+
         :return: Invoice id
         """
         try:
@@ -162,12 +216,13 @@ class OdooHelper:
                             0,
                             0,
                             {
-                                "product_id": ODOO_PRODUCT_SABSCRIPTION_ID,
+                                "product_id": ODOO_PRODUCT_SUBSCRIPTION_ID,
                                 "quantity": 1,
+                                "price_unit": SUBSCRIPTION_PRICE,
                             },
                         )]
 
-            invoice_id = self.connection.execute_kw(
+            invoice_id = self._connection.execute_kw(
                 ODOO_DB,
                 self._uid,
                 ODOO_PASSWORD,
@@ -175,7 +230,10 @@ class OdooHelper:
                 "create",
                 [
                     (
-                        {   "ref": address,
+                        {   
+                            "name": "Robonomics Subscription 1 month",
+                            "partner_id": customer_id,
+                            "ref": address,
                             "move_type": "out_invoice",
                             "invoice_date": str(datetime.today().date()),
                             "line_ids": line_ids
@@ -184,6 +242,19 @@ class OdooHelper:
                 ],
             )
             self._logger.debug(f"Create invoice with id: {invoice_id}")
+            return invoice_id
         except Exception as e:
             self._logger.error(f"Couldn't create invoice: {e}")
             return None
+    
+
+    def post_invoice(self, invoice_id: int) -> bool:
+        return self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "account.move",
+                "write",
+                [[invoice_id], {'state': 'posted'}]
+        )
+     

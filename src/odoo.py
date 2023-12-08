@@ -1,5 +1,7 @@
-from tenacity import *
 from .odoo_internal import OdooHelper
+from tenacity import *
+import typing as tp
+
 
 
 class OdooProxy:
@@ -47,8 +49,6 @@ class OdooProxy:
         :param ticket_id: Id of the ticket to which logs will be added
         :param file_name: Name of the file
         :param file_path: Path to the file
-
-        :return: If the log note was created or no
         """
         self.odoo_helper._logger.debug("Creating note...")
         is_note_created = self.odoo_helper.create_note_with_attachment(ticket_id, file_name, file_path)
@@ -57,14 +57,36 @@ class OdooProxy:
         self.odoo_helper._logger.debug(f"Note created.")
 
     @retry(wait=wait_fixed(5))
-    def create_note_with_attachment(self, address: str) -> int:
+    def create_invoice(self, address: str, email: str) -> int:
         """Creats invoice until it will be created.
         :param address: Customer's address in Robonomics parachain for the reference
-        
-        :return: Invoice id
         """
         self.odoo_helper._logger.debug("Creating invoice...")
-        invoice_id = self.odoo_helper.create_invoice(address)
+        customer_id = self._create_customer(email, address)
+        invoice_id = int(self.odoo_helper.create_invoice(address, customer_id))
         if not invoice_id:
             raise Exception("Failed to create invoice")
         self.odoo_helper._logger.debug(f"Invoice created.")
+        try: 
+            is_posted = self.odoo_helper.post_invoice(invoice_id)
+            self.odoo_helper._logger.debug(f"Invoice posted: {is_posted}")
+        except Exception as e:
+            self.odoo_helper._logger.error(f"Couldn't post invoics: {e}")
+        return invoice_id
+
+
+    
+    @retry(wait=wait_fixed(5))
+    def _create_customer(self, email: str, address: str) -> int:
+        """Creats customer until it will be created.
+        :param email: Customer's email address
+        :param address: Customer's address in Robonomics parachain for the reference
+        
+        :return: Customer id
+        """
+        self.odoo_helper._logger.debug("Creating customer...")
+        customer_id = self.odoo_helper.create_customer(email, address)
+        if not customer_id:
+            raise Exception("Failed to create customer")
+        self.odoo_helper._logger.debug(f"Customer created.")
+        return int(customer_id)

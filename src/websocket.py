@@ -42,10 +42,12 @@ class WSClient:
         self._logger.debug(f"Got msg: {json_message}")
         if "email" in json_message:
             decrypted_email = json_message["email"]
-            robonomics_address = json_message["address"]
-            encrypted_email = decrypt_message(decrypted_email, robonomics_address, ADMIN_SEED)
-            self.odoo.create_rrs_user(encrypted_email, robonomics_address)
-            self.odoo.create_note_with_attachment(robonomics_address)
+            owner_address = json_message["owner_address"]
+            controller_address = json_message['controller_address']
+            encrypted_email = decrypt_message(decrypted_email, controller_address, ADMIN_SEED)
+            self.odoo.create_rrs_user(encrypted_email, owner_address)
+            self.odoo.create_invoice(owner_address, encrypted_email)
+            self.ws.send(json.dumps({"protocol": f"/pinataCreds/{controller_address}", "serverPeerId": "", "data": {"public": "123", "private": "xxxx"}}))
 
     def _on_error(self, ws, error):
         self._logger.error(f"{error}")

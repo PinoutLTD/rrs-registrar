@@ -173,14 +173,6 @@ class OdooHelper:
     
 
     def create_customer(self, email: str, address: str) -> tp.Optional[int]:
-        """Creates a useer in invoicing module if it doesn't exist. Used in an invoice in partner_id to 
-        be able to post the invoice.
-
-        :param email: Customer's email address
-        :param address: Customer's address in Robonomics parachain
-
-        :return: Customer id.
-        """
         try:
             customer_id = self._check_if_customer_exists(address)
             if customer_id: 
@@ -217,6 +209,7 @@ class OdooHelper:
                             0,
                             {
                                 "product_id": ODOO_PRODUCT_SUBSCRIPTION_ID,
+                                "name": "Robonomics Subscription 1 month",
                                 "quantity": 1,
                                 "price_unit": SUBSCRIPTION_PRICE,
                             },
@@ -231,7 +224,6 @@ class OdooHelper:
                 [
                     (
                         {   
-                            "name": "Robonomics Subscription 1 month",
                             "partner_id": customer_id,
                             "ref": address,
                             "move_type": "out_invoice",
@@ -257,4 +249,4 @@ class OdooHelper:
                 "write",
                 [[invoice_id], {'state': 'posted'}]
         )
-     
+    

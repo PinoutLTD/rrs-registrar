@@ -6,7 +6,7 @@ import shutil
 import os
 from tenacity import *
 from utils.logger import Logger
-from utils.decrypt_msg import decrypt_message
+from utils.decrypt_encrypt_msg import decrypt_message
 
 load_dotenv()
 
@@ -45,7 +45,7 @@ class IPFSHelpder:
 
         except Exception as e:
             self._logger.error(f"Couldn't download logs {file_name} from ipfs: {e}")
-            raise(e)
+            raise (e)
 
     def _download_logs(self, hash: str) -> None:
         """Download all the files from IPFS.

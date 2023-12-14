@@ -1,11 +1,9 @@
 from dotenv import load_dotenv
 import os
-import base64
 import xmlrpc.client
 import typing as tp
 from datetime import datetime
 from utils.logger import Logger
-from utils.read_file import read_file
 
 load_dotenv()
 
@@ -69,96 +67,6 @@ class OdooHelper:
             return user_id
         except Exception as e:
             self._logger.error(f"Couldn't create ticket: {e}")
-            return None
-
-    def create_ticket(self, email: str, robonomics_address: str, phone: str, description: str) -> tp.Optional[int]:
-        """Creates ticket in Helpdesk module
-
-        :param email: Customer's email address
-        :param robonomics_address: Customer's address in Robonomics parachain
-        :param phone: Customer's phone number
-        :param description: Problem's description from cusotmer
-
-        :return: Ticket id
-        """
-
-        priority = "3"
-        channel_id = 5
-        name = f"Issue from {robonomics_address}"
-        description = f"Issue from HA: {description}"
-        try:
-            ticket_id = self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "helpdesk.ticket",
-                "create",
-                [
-                    {
-                        "name": name,
-                        "description": description,
-                        "priority": priority,
-                        "channel_id": channel_id,
-                        "partner_email": email,
-                        "phone": phone,
-                    }
-                ],
-            )
-            return ticket_id
-        except Exception as e:
-            self._logger.error(f"Couldn't create ticket: {e}")
-            return None
-
-    def create_note_with_attachment(self, ticket_id: int, file_name: str, file_path: str) -> tp.Optional[bool]:
-        """Create log with attachment in Odoo using logs from the customer
-
-        :param ticket_id: Id of the ticket to which logs will be added
-        :param file_name: Name of the file
-        :param file_path: Path to the file
-
-        :return: If the log note was created or no
-        """
-        data = read_file(file_path)
-        try:
-            record = self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "mail.message",
-                "create",
-                [
-                    {
-                        "body": "Logs from user",
-                        "model": "helpdesk.ticket",
-                        "res_id": ticket_id,
-                    }
-                ],
-            )
-            attachment = self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "ir.attachment",
-                "create",
-                [
-                    {
-                        "name": file_name,
-                        "datas": base64.b64encode(data).decode(),
-                        "res_model": "helpdesk.ticket",
-                        "res_id": ticket_id,
-                    }
-                ],
-            )
-            return self._connection.execute_kw(
-                ODOO_DB,
-                self._uid,
-                ODOO_PASSWORD,
-                "mail.message",
-                "write",
-                [[record], {"attachment_ids": [(4, attachment)]}],
-            )
-        except Exception as e:
-            self._logger.error(f"Couldn't create note: {e}")
             return None
 
     def _check_if_customer_exists(self, address: str) -> tp.Union[int, bool]:

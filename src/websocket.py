@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import json
 import threading
 from utils.logger import Logger
-from utils.decrypt_msg import decrypt_message
+from utils.decrypt_encrypt_msg import decrypt_message
 
 load_dotenv()
 
@@ -28,14 +28,14 @@ class WSClient:
             on_error=self._on_error,
             on_close=self._on_close,
         )
-    
+
     def start(self):
         ws_thread = threading.Thread(target=self.ws.run_forever)
         ws_thread.start()
 
     def _on_connection(self, ws):
         self._logger.debug(f"Connected to {LIBP2P_WS_SERVER}")
-        self.ws.send(json.dumps({"protocols_to_listen": ["/initialization"]} ))
+        self.ws.send(json.dumps({"protocols_to_listen": ["/initialization"]}))
 
     def _on_message(self, ws, message):
         json_message = json.loads(message)
@@ -43,11 +43,10 @@ class WSClient:
         if "email" in json_message:
             decrypted_email = json_message["email"]
             owner_address = json_message["owner_address"]
-            controller_address = json_message['controller_address']
+            controller_address = json_message["controller_address"]
             encrypted_email = decrypt_message(decrypted_email, controller_address, ADMIN_SEED)
-            self.odoo.create_rrs_user(encrypted_email, owner_address)
+            self.odoo.create_rrs_user(encrypted_email, owner_address, controller_address)
             self.odoo.create_invoice(owner_address, encrypted_email)
-            self.ws.send(json.dumps({"protocol": f"/pinataCreds/{controller_address}", "serverPeerId": "", "data": {"public": "123", "private": "xxxx"}}))
 
     def _on_error(self, ws, error):
         self._logger.error(f"{error}")

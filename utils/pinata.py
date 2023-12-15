@@ -12,8 +12,7 @@ def generate_pinata_keys(api_key: str, api_secret_key: str, key_name: str) -> tp
     headers["Content-Type"] = "application/json"
     body = {
         "permissions": {"endpoints": {"pinning": {"pinFileToIPFS": True, "unpin": True}}},
-        "keyName": key_name,
-        "maxUses": 2,
+        "keyName": key_name
     }
 
     response = requests.post(url, json=body, headers=headers)

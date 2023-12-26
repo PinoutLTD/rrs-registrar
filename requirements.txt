@@ -3,3 +3,4 @@ websocket-client==1.6.1
 termcolor==2.4.0
 flask-classful==0.16.0
 tenacity==8.2.3
+rel==0.4.9.1

@@ -2,7 +2,7 @@ import websocket
 import os
 from dotenv import load_dotenv
 import json
-import threading
+import rel
 from utils.logger import Logger
 from utils.decrypt_encrypt_msg import decrypt_message
 
@@ -17,7 +17,6 @@ class WSClient:
         self.odoo = odoo
         self._logger = Logger("websocket")
         self._connect2server()
-        self.start()
 
     def _connect2server(self):
         # websocket.enableTrace(True)
@@ -28,10 +27,11 @@ class WSClient:
             on_error=self._on_error,
             on_close=self._on_close,
         )
-
-    def start(self):
-        ws_thread = threading.Thread(target=self.ws.run_forever)
-        ws_thread.start()
+    
+    def run(self) -> None:
+        self.ws.run_forever(dispatcher=rel, reconnect=5)
+        rel.signal(2, rel.abort)  # Keyboard Interrupt
+        rel.dispatch()
 
     def _on_connection(self, ws):
         self._logger.debug(f"Connected to {LIBP2P_WS_SERVER}")

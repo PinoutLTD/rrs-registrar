@@ -8,6 +8,7 @@ import json
 from utils.logger import Logger
 from utils.pinata import generate_pinata_keys
 from utils.decrypt_encrypt_msg import encrypt_message
+from utils.robonomics import transfer_xrt_2buy_subscription
 
 load_dotenv()
 
@@ -50,11 +51,11 @@ class OdooFlaskView(BaseView):
                 controller_address = str(request_data["controller_address"])
                 pinata_keys = generate_pinata_keys(PINATA_API_KEY, PINATA_API_SECRET, owner_address)
                 threading.Thread(
-                    target=self.handle_data_from_request, args=(id, pinata_keys, controller_address)
+                    target=self.handle_data_from_request, args=(id, pinata_keys, controller_address, owner_address)
                 ).start()
         return "ok"
 
-    def handle_data_from_request(self, user_id, pinata_keys, controller_address):
+    def handle_data_from_request(self, user_id: int, pinata_keys: dict, controller_address: str, owner_address: str):
         pinata_key = pinata_keys["pinata_api_key"]
         pinata_secret = pinata_keys["pinata_api_secret"]
         self.odoo.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_secret)
@@ -66,3 +67,7 @@ class OdooFlaskView(BaseView):
             "data": {"public": pinata_key_encrypted, "private": pinata_secret_encrypted},
         }
         self.ws_client.ws.send(json.dumps(msg))
+        try:
+            transfer_xrt_2buy_subscription(owner_address)
+        except Exception as e:
+            print(f"Couldn't transfer XRT: {e}")

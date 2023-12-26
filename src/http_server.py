@@ -38,7 +38,7 @@ class OdooFlaskView(BaseView):
     def index(self):
         return "<h1>Welcome from Flask</h1>"
 
-    @route("/rrs", methods=["POST"])
+    @route("/rrs/payment", methods=["POST"])
     def payment_handler(self):
         print(f"self 2: {self}")
         request_data = request.get_json()

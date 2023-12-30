@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import xmlrpc.client
 import typing as tp
-from datetime import datetime
+import datetime
 from utils.logger import Logger
 
 load_dotenv()
@@ -56,11 +56,11 @@ class OdooHelper:
                 "create",
                 [
                     {
-                        "address": owner_address,
+                        "address": controller_address,
                         "customer_email": email,
                         "status": STATUS_NOTPAID_ID,
                         "subscription": False,
-                        "controller_address": controller_address,
+                        "owner_address": owner_address,
                     }
                 ],
             )
@@ -139,7 +139,7 @@ class OdooHelper:
                             "partner_id": customer_id,
                             "ref": address,
                             "move_type": "out_invoice",
-                            "invoice_date": str(datetime.today().date()),
+                            "invoice_date": str(datetime.datetime.today().date()),
                             "line_ids": line_ids,
                         }
                     )
@@ -178,7 +178,48 @@ class OdooHelper:
                 {
                     "pinata_key": pinata_key,
                     "pinata_secret": pinata_api_secret,
-                    "started_date": str(datetime.today().date()),
+                },
+            ],
+        )
+
+    def update_rrs_user_with_subscription_status(self, user_id: int) -> bool:
+        """Update the customer profile with subscription status: true after the subscription was bought.
+        :param customer_id: User id
+        :return: bool
+        """
+        current_date = datetime.datetime.today().date()
+        delta_time = datetime.timedelta(days=31)
+        end_date = current_date + delta_time
+        return self._connection.execute_kw(
+            ODOO_DB,
+            self._uid,
+            ODOO_PASSWORD,
+            "rrs.register",
+            "write",
+            [
+                [user_id],
+                {"subscription": True, "started_date": str(current_date), "expired_date": str(end_date)},
+            ],
+        )
+
+    def revoke_pinata_creds_from_rss_user(self, user_id: int) -> bool:
+        """Revoke the pinata credentials from the customer profile in RRS module.
+        :param customer_id: User id
+        :param pinata_key: Pinata API key
+        :param pinata_api_secret: Pinata API secret key
+        :return: bool
+        """
+        return self._connection.execute_kw(
+            ODOO_DB,
+            self._uid,
+            ODOO_PASSWORD,
+            "rrs.register",
+            "write",
+            [
+                [user_id],
+                {
+                    "pinata_key": "",
+                    "pinata_secret": "",
                 },
             ],
         )

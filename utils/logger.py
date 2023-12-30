@@ -16,4 +16,4 @@ class Logger:
 
     def error(self, msg: str):
         current_dateTime = datetime.now()
-        print(colored(f"{current_dateTime} INFO {self.name}: {msg}", "red"))
+        print(colored(f"{current_dateTime} ERROR {self.name}: {msg}", "red"))

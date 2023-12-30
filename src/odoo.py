@@ -59,7 +59,7 @@ class OdooProxy:
         return int(customer_id)
 
     @retry(wait=wait_fixed(5))
-    def update_rrs_user_with_pinata_creds(self, user_id: int, pinata_key: str, pinata_api_secret: str) -> bool:
+    def update_rrs_user_with_pinata_creds(self, user_id: int, pinata_key: str, pinata_api_secret: str) -> None:
         """Update the customer profile with pinata credentials in RRS module.
         :param customer_id: Customer id
         :param pinata_key: Pinata API key
@@ -70,4 +70,28 @@ class OdooProxy:
         is_updated = self.odoo_helper.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_api_secret)
         if not is_updated:
             raise Exception("Failed to update the user")
-        self.odoo_helper._logger.debug(f"User updated.")
+        self.odoo_helper._logger.debug(f"User updated with pinata creds.")
+
+    @retry(wait=wait_fixed(5))
+    def update_rrs_user_with_subscription_status(self, user_id: int) -> None:
+        """Update the customer profile with subscription status: true after the subscription was bought.
+        :param customer_id: User id
+        :return: bool
+        """
+        self.odoo_helper._logger.debug("Updating customer with subscription status...")
+        is_updated = self.odoo_helper.update_rrs_user_with_subscription_status(user_id)
+        if not is_updated:
+            raise Exception("Failed to update the user")
+        self.odoo_helper._logger.debug(f"User updated with subscription status.")
+
+    @retry(wait=wait_fixed(5))
+    def revoke_pinata_creds_from_rss_user(self, user_id: int) -> None:
+        """Update the customer profile with subscription status: true after the subscription was bought.
+        :param customer_id: User id
+        :return: bool
+        """
+        self.odoo_helper._logger.debug("Revoking pinata key from customer profile...")
+        is_updated = self.odoo_helper.revoke_pinata_creds_from_rss_user(user_id)
+        if not is_updated:
+            raise Exception("Failed to update the user")
+        self.odoo_helper._logger.debug(f"Keys revoked.")

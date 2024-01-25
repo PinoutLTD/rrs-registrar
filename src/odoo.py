@@ -95,3 +95,15 @@ class OdooProxy:
         if not is_updated:
             raise Exception("Failed to update the user")
         self.odoo_helper._logger.debug(f"Keys revoked.")
+
+    @retry(wait=wait_fixed(5))
+    def retrieve_pinata_creds(self, controller_address: str) -> tuple:
+        """Retrieve pinata creds.
+        :param controller_address: Controller's address in Robonomics parachain
+
+        :return: The Pinata creds or None.
+        """
+        self.odoo_helper._logger.debug("Retrieving pinata creds from rrs user...")
+        pinata_key, pinata_secret = self.odoo_helper.retrieve_pinata_creds(controller_address)
+        if pinata_key is not None:
+            return pinata_key, pinata_secret

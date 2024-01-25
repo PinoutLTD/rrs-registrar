@@ -47,6 +47,9 @@ class OdooHelper:
 
         :return: User id
         """
+        rrs_user_id = self._check_if_rrs_user_exists(controller_address)
+        if rrs_user_id:
+            return rrs_user_id
         try:
             user_id = self._connection.execute_kw(
                 ODOO_DB,
@@ -223,3 +226,39 @@ class OdooHelper:
                 },
             ],
         )
+
+    def _check_if_rrs_user_exists(self, controller_address: str) -> tp.Union[int, bool]:
+        """Looking for a rrs user id by the controller address.
+        :param controller_address: Controller's address in Robonomics parachain.
+
+        :return: The user id or false.
+        """
+        id = self._connection.execute_kw(
+            ODOO_DB, self._uid, ODOO_PASSWORD, "rrs.register", "search", [[("address", "=", controller_address)]]
+        )
+        self._logger.debug(f"Find RRS user with id: {id}")
+        return id
+
+    def retrieve_pinata_creds(self, controller_address: str) -> tuple:
+        """Retrieve pinata creds.
+        :param controller_address: Controller's address in Robonomics parachain
+
+        :return: The Pinata creds or None.
+        """
+        rrs_user_id = self._check_if_rrs_user_exists(controller_address)
+        if rrs_user_id:
+            rrs_user_data = self._connection.execute_kw(
+                ODOO_DB,
+                self._uid,
+                ODOO_PASSWORD,
+                "rrs.register",
+                "read",
+                [rrs_user_id[0]],
+                {"fields": ["pinata_key", "pinata_secret"]},
+            )
+            pinata_key = rrs_user_data[0]["pinata_key"]
+            pinata_secret = rrs_user_data[0]["pinata_secret"]
+            self._logger.debug(f"Found pinata creds for address: {controller_address}, pinata key: {pinata_key}")
+            return pinata_key, pinata_secret
+        else:
+            self._logger.error(f"Couldn't find pinata creds for {controller_address}")

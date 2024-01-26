@@ -1,6 +1,6 @@
 from .odoo_internal import OdooHelper
 from tenacity import *
-import time
+import typing as tp
 
 
 class OdooProxy:
@@ -28,7 +28,7 @@ class OdooProxy:
     @retry(wait=wait_fixed(5))
     def create_invoice(self, address: str, email: str) -> int:
         """Creats invoice until it will be created.
-        :param address: Customer's address in Robonomics parachain for the reference
+        :param address: Owner's address in Robonomics parachain for the reference
         """
         self.odoo_helper._logger.debug("Creating invoice...")
         customer_id = self._create_customer(email, address)
@@ -64,7 +64,7 @@ class OdooProxy:
         :param customer_id: Customer id
         :param pinata_key: Pinata API key
         :param pinata_api_secret: Pinata API secret key
-        :return: bool
+        :return: bool        rrs_user_id = self.check_if_rrs_user_exists(controller_address)
         """
         self.odoo_helper._logger.debug("Updating customer with pinata creds...")
         is_updated = self.odoo_helper.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_api_secret)
@@ -97,13 +97,36 @@ class OdooProxy:
         self.odoo_helper._logger.debug(f"Keys revoked.")
 
     @retry(wait=wait_fixed(5))
-    def retrieve_pinata_creds(self, controller_address: str) -> tuple:
+    def retrieve_pinata_creds(self, controller_address: str, rrs_user_id: int) -> tuple:
         """Retrieve pinata creds.
         :param controller_address: Controller's address in Robonomics parachain
 
         :return: The Pinata creds or None.
         """
         self.odoo_helper._logger.debug("Retrieving pinata creds from rrs user...")
-        pinata_key, pinata_secret = self.odoo_helper.retrieve_pinata_creds(controller_address)
+        pinata_key, pinata_secret = self.odoo_helper.retrieve_pinata_creds(controller_address, rrs_user_id)
         if pinata_key is not None:
             return pinata_key, pinata_secret
+
+    @retry(wait=wait_fixed(5))
+    def check_if_rrs_user_exists(self, controller_address: str) -> tp.Union[int, bool]:
+        """Looking for a rrs user id by the controller address.
+        :param controller_address: Controller's address in Robonomics parachain.
+
+        :return: The user id or false.
+        """
+        id = self.odoo_helper.check_if_rrs_user_exists(controller_address)
+        return id
+
+    @retry(wait=wait_fixed(5))
+    def check_if_invoice_posted(self, owner_address: str) -> tp.Optional[int]:
+        """Checks if invoice  for this account is posted.
+        :param owner_address: Owner's address in Robonomics parachain for the reference
+
+        :return: Invoice id
+        """
+        self.odoo_helper._logger.debug("Checking if invoice is posted...")
+        id = self.odoo_helper.check_if_invoice_posted(owner_address)
+        if id:
+            return True
+        return False

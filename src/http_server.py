@@ -7,9 +7,9 @@ import json
 
 from utils.logger import Logger
 from utils.pinata import generate_pinata_keys, revoke_pinata_key, unpin_hash_from_pinata
-from utils.decrypt_encrypt_msg import encrypt_message
 from utils.robonomics import transfer_xrt_2buy_subscription
 from utils.parse_string import extract_hash
+from utils.messages import message_with_pinata_creds
 
 load_dotenv()
 
@@ -64,14 +64,8 @@ class OdooFlaskView(BaseView):
         pinata_key = pinata_keys["pinata_api_key"]
         pinata_secret = pinata_keys["pinata_api_secret"]
         self.odoo.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_secret)
-        pinata_key_encrypted = encrypt_message(pinata_key, ADMIN_SEED, controller_address)
-        pinata_secret_encrypted = encrypt_message(pinata_secret, ADMIN_SEED, controller_address)
-        msg = {
-            "protocol": f"/pinataCreds/{controller_address}",
-            "serverPeerId": "",
-            "data": {"public": pinata_key_encrypted, "private": pinata_secret_encrypted},
-        }
-        self.ws_client.ws.send(json.dumps(msg))
+        msg = message_with_pinata_creds(pinata_key, pinata_secret, controller_address)
+        self.ws_client.ws.send(msg)
         try:
             transaction_hash = transfer_xrt_2buy_subscription(owner_address)
             if transaction_hash:
@@ -113,5 +107,5 @@ class OdooFlaskView(BaseView):
                 if pinata_response == {"message": "Removed"}:
                     self._logger.debug(f"Succesfully removed hash {hash} from Pinata")
                 else:
-                    self._logger.error(f"Couldn't remove hash {hash} from Pinata. Response: {pinata_response}")
+                    self._logger.error(f"Couldn't remove hash {hash} from Pinata. Response: {pinata_response}")     
         return "ok"

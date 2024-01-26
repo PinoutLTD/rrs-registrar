@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 import json
 import rel
 from utils.logger import Logger
-from utils.decrypt_encrypt_msg import decrypt_message, encrypt_message
+from utils.decrypt_encrypt_msg import decrypt_message
+from utils.messages import message_with_pinata_creds
 
 load_dotenv()
 
@@ -45,20 +46,20 @@ class WSClient:
             owner_address = json_message["owner_address"]
             controller_address = json_message["controller_address"]
             encrypted_email = decrypt_message(decrypted_email, controller_address, ADMIN_SEED)
-            pinata_key, pinata_secret = self.odoo.retrieve_pinata_creds(controller_address)
-            if pinata_key:
-                pinata_key_encrypted = encrypt_message(pinata_key, ADMIN_SEED, controller_address)
-                pinata_secret_encrypted = encrypt_message(pinata_secret, ADMIN_SEED, controller_address)
-                msg = {
-                    "protocol": f"/pinataCreds/{controller_address}",
-                    "serverPeerId": "",
-                    "data": {"public": pinata_key_encrypted, "private": pinata_secret_encrypted},
-                }
-                self.ws.send(json.dumps(msg))
-            else:
-                self._logger.error(f"Couldn't get pinata creds. Creating a new one..")
-                self.odoo.create_rrs_user(encrypted_email, owner_address, controller_address)
-                self.odoo.create_invoice(owner_address, encrypted_email)
+            rrs_user_id = self.odoo.check_if_rrs_user_exists(controller_address)
+            if rrs_user_id:
+                pinata_key, pinata_secret = self.odoo.retrieve_pinata_creds(controller_address, rrs_user_id)
+                if pinata_key:
+                    msg = message_with_pinata_creds(pinata_key, pinata_secret, controller_address)
+                    self.ws.send(msg)
+                    return
+                else:
+                    is_invoice_posted = self.odoo.check_if_invoice_posted(owner_address)
+                    if is_invoice_posted:
+                        return
+            self._logger.error(f"Couldn't get pinata creds. Creating a new one..")
+            self.odoo.create_rrs_user(encrypted_email, owner_address, controller_address)
+            self.odoo.create_invoice(owner_address, encrypted_email)
 
     def _on_error(self, ws, error):
         self._logger.error(f"{error}")

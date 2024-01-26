@@ -47,7 +47,7 @@ class OdooHelper:
 
         :return: User id
         """
-        rrs_user_id = self._check_if_rrs_user_exists(controller_address)
+        rrs_user_id = self.check_if_rrs_user_exists(controller_address)
         if rrs_user_id:
             return rrs_user_id
         try:
@@ -110,9 +110,9 @@ class OdooHelper:
             self._logger.error(f"Couldn't create customer: {e}")
             return None
 
-    def create_invoice(self, address: str, customer_id: str) -> tp.Optional[int]:
+    def create_invoice(self, owner_address: str, customer_id: str) -> tp.Optional[int]:
         """Creates invoice in Invoicing module.
-        :param address: Customer's address in Robonomics parachain for the reference
+        :param address: Owner's address in Robonomics parachain for the reference
 
         :return: Invoice id
         """
@@ -140,7 +140,7 @@ class OdooHelper:
                     (
                         {
                             "partner_id": customer_id,
-                            "ref": address,
+                            "ref": owner_address,
                             "move_type": "out_invoice",
                             "invoice_date": str(datetime.datetime.today().date()),
                             "line_ids": line_ids,
@@ -227,7 +227,7 @@ class OdooHelper:
             ],
         )
 
-    def _check_if_rrs_user_exists(self, controller_address: str) -> tp.Union[int, bool]:
+    def check_if_rrs_user_exists(self, controller_address: str) -> tp.Union[int, bool]:
         """Looking for a rrs user id by the controller address.
         :param controller_address: Controller's address in Robonomics parachain.
 
@@ -239,13 +239,12 @@ class OdooHelper:
         self._logger.debug(f"Find RRS user with id: {id}")
         return id
 
-    def retrieve_pinata_creds(self, controller_address: str) -> tuple:
+    def retrieve_pinata_creds(self, controller_address: str, rrs_user_id: int) -> tuple:
         """Retrieve pinata creds.
         :param controller_address: Controller's address in Robonomics parachain
 
         :return: The Pinata creds or None.
         """
-        rrs_user_id = self._check_if_rrs_user_exists(controller_address)
         if rrs_user_id:
             rrs_user_data = self._connection.execute_kw(
                 ODOO_DB,
@@ -262,3 +261,17 @@ class OdooHelper:
             return pinata_key, pinata_secret
         else:
             self._logger.error(f"Couldn't find pinata creds for {controller_address}")
+
+
+    def check_if_invoice_posted(self, owner_address: str) -> tp.Optional[int]:
+        """Checks if invoice  for this account is posted.
+        :param owner_address: Owner's address in Robonomics parachain for the reference
+
+        :return: Invoice id or None
+        """
+        customer_id = self._check_if_customer_exists(owner_address)
+        id = self._connection.execute_kw(
+            ODOO_DB, self._uid, ODOO_PASSWORD, "account.move", "search", [[("partner_id", "=", customer_id)]]
+        )
+        self._logger.debug(f"Find invoice with id: {id}")
+        return id

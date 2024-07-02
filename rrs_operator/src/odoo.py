@@ -117,3 +117,17 @@ class Odoo:
         id = self.helper.search(model="rrs.register", search_domains=[("address", "=", address)])
         self._logger.debug(f"Find user with id: {id}")
         return id
+
+    def find_ticket_with_description(self, description: str, email: str) -> int:
+        """ """
+        description = f"Issue from HA: {description}"
+        self._logger.debug(f"Looking for a ticket for email: {email}, description: {description}")
+        ticket_ids = self.helper.search(
+            model="helpdesk.ticket", search_domains=[("description", "=", description), ("partner_email", "=", email)]
+        )
+        self._logger.debug(f"Ticket ids: {ticket_ids}")
+
+        if ticket_ids:
+            self._logger.debug(f"Found tickets with the description: {ticket_ids}")
+            return ticket_ids[0]
+        self._logger.debug(f"No ticket found")

@@ -1,0 +1,1 @@
+from .reports_fabric import ReportsFabric

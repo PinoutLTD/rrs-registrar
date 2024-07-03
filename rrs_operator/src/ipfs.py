@@ -7,6 +7,7 @@ import os
 from tenacity import *
 from helpers.logger import Logger
 from utils.decryption import decrypt_message
+from rrs_operator.utils.reports import ReportsFabric
 
 load_dotenv()
 
@@ -63,15 +64,21 @@ class IPFSHelpder:
                 for i in range(1, pictures_count + 1):
                     self._download_file(hash, f"picture{i}")
 
-    def parse_logs(self, hash) -> tuple:
+    def parse_logs(self, hash) -> list:
         """Parse description file."""
         self._download_logs(hash)
         self._logger.info(f"IPFS:  Parsing logs... Hash: {hash}")
         with open(f"{self.temp_dir}/issue_description.json") as f:
             issue = json.load(f)
-            phone = issue["phone_number"]
-            description = issue["description"]
-        return phone, description
+            if isinstance(issue["description"], dict):
+                description_type = issue["description"]["type"]
+                unparsed_description = issue["description"]["description"]
+            else:
+                description_type = "errors"
+                unparsed_description = issue["description"]
+            report = ReportsFabric.get_report(description_type)
+            description = report.get_descriptions(unparsed_description)
+        return description
 
     def clean_temp_dir(self) -> None:
         """Remove the temporary directory and its content"""

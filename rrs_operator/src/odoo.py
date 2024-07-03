@@ -8,19 +8,17 @@ from rrs_operator.utils.read_file import read_file
 
 class Odoo:
     """Odoo for Operator"""
+
     def __init__(self) -> None:
         self.helper = OdooHelper("operator")
         self._logger = Logger("odoo-registar")
 
     @retry(wait=wait_fixed(5))
-    def create_ticket(
-        self, email: str, robonomics_address: str, phone: str, description: str, ipfs_hash: str
-    ) -> tp.Optional[int]:
+    def create_ticket(self, email: str, robonomics_address: str, description: str, ipfs_hash: str) -> tp.Optional[int]:
         """Creates ticket in Helpdesk module
 
         :param email: Customer's email address
         :param robonomics_address: Customer's address in Robonomics parachain
-        :param phone: Customer's phone number
         :param description: Problem's description from cusotmer
 
         :return: Ticket id
@@ -39,7 +37,6 @@ class Odoo:
                     "priority": priority,
                     "channel_id": channel_id,
                     "partner_email": email,
-                    "phone": phone,
                 },
             )
             self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
@@ -97,7 +94,7 @@ class Odoo:
             self._logger.debug(f"user id: {user_id}")
             if user_id:
                 user_data = self.helper.read(model="rrs.register", record_ids=user_id, fields=["customer_email"])
-                email = user_data[0]['customer_email']
+                email = user_data[0]["customer_email"]
                 self._logger.debug(f"Find user's email: {email}")
                 return email
             else:
@@ -106,7 +103,6 @@ class Odoo:
         except Exception as e:
             self._logger.error(f"Couldn't find email {e}")
             raise Exception("Failed to find email")
-    
 
     def _find_user_id(self, address: str) -> list:
         """Find a user id by the parachain address. This id is used to retrive the user's email.

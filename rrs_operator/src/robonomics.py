@@ -22,7 +22,7 @@ class RobonomicsHelper:
         self.odoo = odoo
         self.users = self.rws.get_devices(ADMIN_ADDRESS)
         self._track_free_weight()
-    
+
     def add_user_callback(self, address: str) -> None:
         """Updates the list of users to track new datalogs for
         :param address: Address to add
@@ -69,19 +69,20 @@ class RobonomicsHelper:
         """
         ipfs = IPFSHelpder(robonomics_address_from)
         email = self.odoo.find_user_email(robonomics_address_from)
-        phone, description = ipfs.parse_logs(ipfs_hash)
-        self._logger.debug(f"Data from ipfs: {email}, {phone}, {description}")
-        ticket_id = self.odoo.find_ticket_with_description(description, email)
-        if not ticket_id:
-            ticket_id = self.odoo.create_ticket(email, robonomics_address_from, phone, description, ipfs_hash)
-        if len(os.listdir(ipfs.temp_dir)) > 1:
-            for f in os.listdir(ipfs.temp_dir):
-                if f == "issue_description.json":
-                    pass
-                else:
-                    file_name = f
-                    file_path = f"{ipfs.temp_dir}/{f}"
-                    self.odoo.create_note_with_attachment(ticket_id, file_name, file_path)
+        descriptions_list = ipfs.parse_logs(ipfs_hash)
+        self._logger.debug(f"Data from ipfs: {email}, {descriptions_list}")
+        for description in descriptions_list:
+            ticket_id = self.odoo.find_ticket_with_description(description, email)
+            if not ticket_id:
+                ticket_id = self.odoo.create_ticket(email, robonomics_address_from, description, ipfs_hash)
+            if len(os.listdir(ipfs.temp_dir)) > 1:
+                for f in os.listdir(ipfs.temp_dir):
+                    if f == "issue_description.json":
+                        pass
+                    else:
+                        file_name = f
+                        file_path = f"{ipfs.temp_dir}/{f}"
+                        self.odoo.create_note_with_attachment(ticket_id, file_name, file_path)
         ipfs.clean_temp_dir()
 
     def _resubscribe(self) -> None:
@@ -104,7 +105,9 @@ class RobonomicsHelper:
 
     def _track_free_weight(self) -> None:
         """Track free weight of the subscription"""
-        threading.Timer(60, self._track_free_weight,).start()
+        threading.Timer(
+            60,
+            self._track_free_weight,
+        ).start()
         free_weight = self.rws.get_ledger(ADMIN_ADDRESS)
         self._logger.debug(f"Free weight in subscription: {free_weight}")
-

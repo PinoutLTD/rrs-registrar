@@ -69,12 +69,12 @@ class RobonomicsHelper:
         """
         ipfs = IPFSHelpder(robonomics_address_from)
         email = self.odoo.find_user_email(robonomics_address_from)
-        descriptions_list = ipfs.parse_logs(ipfs_hash)
-        self._logger.debug(f"Data from ipfs: {email}, {descriptions_list}")
+        descriptions_list, priority = ipfs.parse_logs(ipfs_hash)
+        self._logger.debug(f"Data from ipfs: {email}, {descriptions_list}, priority: {priority}")
         for description in descriptions_list:
             ticket_id = self.odoo.find_ticket_with_description(description, email)
             if not ticket_id:
-                ticket_id = self.odoo.create_ticket(email, robonomics_address_from, description, ipfs_hash)
+                ticket_id = self.odoo.create_ticket(email, robonomics_address_from, description, priority)
             if len(os.listdir(ipfs.temp_dir)) > 1:
                 for f in os.listdir(ipfs.temp_dir):
                     if f == "issue_description.json":

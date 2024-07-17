@@ -14,17 +14,17 @@ class Odoo:
         self._logger = Logger("odoo-registar")
 
     @retry(wait=wait_fixed(5))
-    def create_ticket(self, email: str, robonomics_address: str, description: str, ipfs_hash: str) -> tp.Optional[int]:
+    def create_ticket(self, email: str, robonomics_address: str, description: str, priority: str) -> tp.Optional[int]:
         """Creates ticket in Helpdesk module
 
         :param email: Customer's email address
         :param robonomics_address: Customer's address in Robonomics parachain
         :param description: Problem's description from cusotmer
+        :param priority: Priority rating based on report type
 
         :return: Ticket id
         """
 
-        priority = "3"
         channel_id = 5
         name = f"Issue from {robonomics_address}"
         description = f"Issue from HA: {description}"

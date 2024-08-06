@@ -102,3 +102,16 @@ class OdooHelper:
                 {"fields": fields},
             )
         return data
+
+    def unlink(self, model: str, record_ids: list) -> bool:
+        """Method to delete records from the database. 
+        :param model: Name of the model in Odoo
+        :param record_ids: Ids of the records to delete
+
+        :return: True if the deletion is successful.
+        """
+        try: 
+            result = self._connection.execute_kw(ODOO_DB, self._uid, ODOO_PASSWORD, model, "unlink", record_ids)
+            return result
+        except Exception as e:
+            self._logger.error(f"Couldn't unlink records {record_ids} in model {model}")

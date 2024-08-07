@@ -5,3 +5,4 @@ flask-classful==0.16.0
 tenacity==8.2.3
 rel==0.4.9.1
 pinatapy-vourhey==0.2.0
+IPFS-Toolkit==0.5.23

@@ -21,9 +21,10 @@ class BaseView(FlaskView):
     _logger = None
 
     @classmethod
-    def initialize(cls, add_user_callback):
+    def initialize(cls, add_user_callback, unpin_logs_from_IPFS_callback):
         cls.set_logger()
         cls.add_user_callback = add_user_callback
+        cls.unpin_logs_from_IPFS_callback = unpin_logs_from_IPFS_callback
 
     @classmethod
     def set_logger(cls):
@@ -40,4 +41,13 @@ class OdooFlaskView(BaseView):
         self._logger.debug(f"Data from new-user request: {request_data}")
         address = request_data["address"]
         self.add_user_callback(address)
+        return "ok"
+
+    @route("/rrs/ticket-done", methods=["POST"])
+    def ticket_dont_handler(self):
+        request_data = request.get_json()
+        self._logger.debug(f"Data from ticket-done request: {request_data}")
+        if int(request_data["stage"]) == int(DONE_SATGE_ID):
+            ticket_id = int(request_data["id"])
+            self.unpin_logs_from_IPFS_callback(ticket_id)
         return "ok"

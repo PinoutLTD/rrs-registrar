@@ -47,20 +47,6 @@ class IPFSHelpder:
     def clean_temp_dir(self) -> None:
         """Remove the temporary directory and its content"""
         shutil.rmtree(self.temp_dir)
-    
-    @staticmethod
-    def unpin_hash_from_IPFS(self, ticket_id: str) -> None:
-        hashes = self.odoo.get_hashes_from_ticket(ticket_id)
-        client = ipfshttpclient2.connect(IPFS_ENDPOINT)
-        for hash in hashes:
-            print(f"Unpinning {hash} from the local node...")
-            try:
-                res = client.pin.rm(hash)
-                print(f"Unpinned {res['Pins']}")
-            except ipfshttpclient2.exceptions.ErrorResponse:
-                print(f"Hash {hash} already unpinned.")
-                pass
-        client.close()
 
     @retry(wait=wait_fixed(5))
     def _download_file(self, hash: str, file_name: str) -> None:

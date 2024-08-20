@@ -1,8 +1,10 @@
+import os
+
 import ipfshttpclient2
+from dotenv import load_dotenv
+
 from helpers.logger import Logger
 from rrs_operator.utils.files_helper import FilesHelper
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
 IPFS_ENDPOINT = os.getenv("IPFS_ENDPOINT")

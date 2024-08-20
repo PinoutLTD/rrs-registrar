@@ -1,10 +1,12 @@
-from helpers.odoo import OdooHelper
-from helpers.logger import Logger
-from tenacity import *
-import typing as tp
 import base64
-from rrs_operator.utils.read_file import read_file
+import typing as tp
+
+from tenacity import *
+
+from helpers.logger import Logger
+from helpers.odoo import OdooHelper
 from rrs_operator.utils.format_hash_str import format_hash
+from rrs_operator.utils.read_file import read_file
 
 
 class Odoo:

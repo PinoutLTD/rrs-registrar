@@ -1,7 +1,8 @@
+import os
+
+from dotenv import load_dotenv
 from flask import request
 from flask_classful import FlaskView, route
-from dotenv import load_dotenv
-import os
 
 from helpers.logger import Logger
 

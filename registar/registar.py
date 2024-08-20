@@ -1,10 +1,12 @@
-from registar.src.odoo import Odoo
-from registar.src.http_server import OdooFlaskView, BaseView
-from registar.src.websocket import WSClient
-from flask import Flask
-import threading
 import os
+import threading
+
 from dotenv import load_dotenv
+from flask import Flask
+
+from registar.src.http_server import BaseView, OdooFlaskView
+from registar.src.odoo import Odoo
+from registar.src.websocket import WSClient
 
 load_dotenv()
 FLASK_PORT = os.getenv("FLASK_PORT")

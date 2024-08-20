@@ -1,13 +1,16 @@
-import websocket
-import os
-from dotenv import load_dotenv
 import json
+import os
+
 import rel
+import websocket
+from dotenv import load_dotenv
+
 from helpers.logger import Logger
-from utils.decryption import decrypt_message
-from registar.utils.messages import message_with_pinata_creds, message_for_subscribing
-from registar.utils.robonomics import add_device_to_subscription
 from helpers.pinata import PinataHelper
+from registar.utils.messages import (message_for_subscribing,
+                                     message_with_pinata_creds)
+from registar.utils.robonomics import add_device_to_subscription
+from utils.decryption import decrypt_message
 
 load_dotenv()
 

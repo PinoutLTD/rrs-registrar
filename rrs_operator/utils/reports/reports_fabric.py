@@ -1,5 +1,4 @@
-from .src import Report
-from .src import WarningsReport, ErrorsReport, UnrespondedDevicesReport
+from .src import ErrorsReport, Report, UnrespondedDevicesReport, WarningsReport
 
 
 class ReportsFabric:

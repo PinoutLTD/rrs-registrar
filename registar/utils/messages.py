@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 from utils.encryption import encrypt_for_users
 
 ADMIN_SEED = os.getenv("ADMIN_SEED")

@@ -1,9 +1,10 @@
-from substrateinterface import Keypair, KeypairType
-from robonomicsinterface import Account
-import typing as tp
 import json
 import os
+import typing as tp
+
 from dotenv import load_dotenv
+from robonomicsinterface import Account
+from substrateinterface import Keypair, KeypairType
 
 load_dotenv()
 ADMIN_SEED = os.getenv("ADMIN_SEED")

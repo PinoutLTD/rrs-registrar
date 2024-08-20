@@ -7,7 +7,7 @@ from helpers.logger import Logger
 from utils.decryption import decrypt_message
 from registar.utils.messages import message_with_pinata_creds, message_for_subscribing
 from registar.utils.robonomics import add_device_to_subscription
-from registar.utils.pinata import generate_pinata_keys
+from helpers.pinata import PinataHelper
 
 load_dotenv()
 
@@ -65,9 +65,10 @@ class WSClient:
             hash = add_device_to_subscription(sender_address)
             if hash:
                 self._logger.debug(f"Add {sender_address} to subscription")
-                pinata_keys = generate_pinata_keys(PINATA_API_KEY, PINATA_API_SECRET, sender_address)
+                pinata_keys = PinataHelper.generate_pinata_keys(sender_address)
                 pinata_key = pinata_keys["pinata_api_key"]
                 pinata_secret = pinata_keys["pinata_api_secret"]
+                self._logger.debug(f"Pinata creds: {pinata_key}, {pinata_secret}, {pinata_keys}")
                 self.odoo.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_secret)
                 msg = message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger)
                 self.ws.send(msg)

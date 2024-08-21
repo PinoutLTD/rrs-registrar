@@ -54,7 +54,7 @@ class Odoo:
             record = self.helper.create(
                 model="mail.message",
                 data={
-                    "body": f"{ipfs_hash}",
+                    "body": f"https://demo.iotlab.cloud/tg/rrs/ipfs/{ipfs_hash}",
                     "model": "helpdesk.ticket",
                     "res_id": ticket_id,
                 },

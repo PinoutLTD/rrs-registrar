@@ -1,4 +1,5 @@
 import json
+from tenacity import *
 
 from helpers.logger import Logger
 from helpers.pinata import PinataHelper
@@ -50,6 +51,7 @@ class ReportManager:
         except json.decoder.JSONDecodeError:
             return "str"
     
+    @retry(wait=wait_fixed(10))
     def _handle_json_report(self):
         self._logger.debug("Handling json report.")
         dict_with_logs = json.loads(self.report_msg)
@@ -62,6 +64,7 @@ class ReportManager:
                 self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
                 self.ipfs.pin_file(path_to_saved_file)
 
+    @retry(wait=wait_fixed(10))
     def _handle_str_report(self):
         self._logger.debug("Handling string report.")
         for log in logs_name:

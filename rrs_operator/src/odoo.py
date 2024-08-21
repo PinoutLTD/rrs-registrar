@@ -6,7 +6,6 @@ from tenacity import *
 from helpers.logger import Logger
 from helpers.odoo import OdooHelper
 from rrs_operator.utils.format_hash_str import format_hash
-from rrs_operator.utils.read_file import read_file
 
 
 class Odoo:

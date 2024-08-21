@@ -14,8 +14,14 @@ class Operator:
 
     def get_unpin_logs_from_IPFS_callback(self):
         return self._get_and_unpin_hashes_from_ipfs
+    
+    def get_file_from_IPFS_callback(self):
+        return self._get_file_from_ipfs
 
     def _get_and_unpin_hashes_from_ipfs(self, ticket_id: int) -> None:
         hashes = self.odoo.get_hashes_from_ticket(ticket_id)
         for hash in hashes:
             IPFSHelper.unpin_hash(hash)
+
+    def _get_file_from_ipfs(self, hash: str):
+        return IPFSHelper.get_ipfs_file(hash)

@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from flask import request
+from flask import Response, request
 from flask_classful import FlaskView, route
 
 from helpers.logger import Logger
@@ -22,10 +22,11 @@ class BaseView(FlaskView):
     _logger = None
 
     @classmethod
-    def initialize(cls, add_user_callback, unpin_logs_from_IPFS_callback):
+    def initialize(cls, add_user_callback, unpin_logs_from_IPFS_callback, get_file_from_IPFS_callback):
         cls.set_logger()
         cls.add_user_callback = add_user_callback
         cls.unpin_logs_from_IPFS_callback = unpin_logs_from_IPFS_callback
+        cls.get_file_from_IPFS_callback = get_file_from_IPFS_callback
 
     @classmethod
     def set_logger(cls):
@@ -52,3 +53,12 @@ class OdooFlaskView(BaseView):
             ticket_id = int(request_data["id"])
             self.unpin_logs_from_IPFS_callback(ticket_id)
         return "ok"
+    
+    @route("/rrs/ipfs/<hash>", methods=["GET"])
+    def download_logs_handler(self, hash):
+        log_content = self.get_file_from_IPFS_callback(hash)
+        response = Response(log_content)
+        response.headers["Content-Disposition"] = f"attachment; filename={hash}"
+        response.headers["Content-Type"] = "text/plain"
+        return response
+

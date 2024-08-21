@@ -56,10 +56,9 @@ class ReportManager:
         for k, v in dict_with_logs.items():
             encrypted_content = PinataHelper.download_file(hash=v, logger=self._logger)
             path_to_saved_file = self._save_decrypted_logs(encrypted_content=encrypted_content, file_name=k)
-            if k == DESCRIPTION_FILE_NAME:
-                self._logger.debug("Unppining description file from Pinata...")
+            if not(k == DESCRIPTION_FILE_NAME):
+                self._logger.debug("Unppining logs file from Pinata...")
                 PinataHelper.unpin_file(hash=v, logger=self._logger)
-            else:
                 self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
                 self.ipfs.pin_file(path_to_saved_file)
 
@@ -76,5 +75,3 @@ class ReportManager:
         decrypted_content = decrypt_message(encrypted_content, self.sender_public_key, self._logger)
         path_to_saved_file = FilesHelper.create_and_save_file(decrypted_content, self._temp_dir, file_name)
         return path_to_saved_file
-
-    

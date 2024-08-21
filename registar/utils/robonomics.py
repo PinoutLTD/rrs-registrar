@@ -1,5 +1,6 @@
-import robonomicsinterface as ri
 import os
+
+import robonomicsinterface as ri
 from dotenv import load_dotenv
 from substrateinterface import KeypairType
 

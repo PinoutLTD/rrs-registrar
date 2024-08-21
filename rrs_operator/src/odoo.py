@@ -1,9 +1,10 @@
-from helpers.odoo import OdooHelper
-from helpers.logger import Logger
-from tenacity import *
-import typing as tp
 import base64
-from rrs_operator.utils.read_file import read_file
+import typing as tp
+
+from tenacity import *
+
+from helpers.logger import Logger
+from helpers.odoo import OdooHelper
 from rrs_operator.utils.format_hash_str import format_hash
 
 
@@ -53,7 +54,7 @@ class Odoo:
             record = self.helper.create(
                 model="mail.message",
                 data={
-                    "body": f"{ipfs_hash}",
+                    "body": f"https://demo.iotlab.cloud/tg/rrs/ipfs/{ipfs_hash}",
                     "model": "helpdesk.ticket",
                     "res_id": ticket_id,
                 },

@@ -1,7 +1,10 @@
+import typing as tp
+
+from tenacity import *
+
 from helpers.logger import Logger
 from helpers.odoo import OdooHelper
-import typing as tp
-from tenacity import *
+
 
 class Odoo:
     def __init__(self) -> None:

@@ -1,7 +1,9 @@
-from dotenv import load_dotenv
 import os
-import xmlrpc.client
 import typing as tp
+import xmlrpc.client
+
+from dotenv import load_dotenv
+
 from helpers.logger import Logger
 
 load_dotenv()

@@ -9,11 +9,11 @@ ADMIN_SEED = os.getenv("ADMIN_SEED")
 WSS_ENDPOINT = os.getenv("WSS_ENDPOINT")
 ADMIN_ADDRESS = os.getenv("ADMIN_ADDRESS")
 
-def add_device_to_subscription(address: str) -> bool:
+def add_device_to_subscription(address: str) -> str:
     """ Checks whether the address has an active subscription or not.
     :param owner_address: Address of the subscription's owner.
 
-    :return True if subscription is active, False otherwise
+    :return Hash of the transaction
     """
     account = ri.Account(remote_ws=WSS_ENDPOINT, seed=ADMIN_SEED, crypto_type=KeypairType.ED25519)
     rws = ri.RWS(account)

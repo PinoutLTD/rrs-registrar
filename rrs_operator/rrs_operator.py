@@ -1,5 +1,8 @@
+import threading
+
 from rrs_operator.src.odoo import Odoo
 from rrs_operator.src.robonomics import RobonomicsHelper
+from rrs_operator.src.ws_client import WSClient
 from rrs_operator.utils.ipfs_helper import IPFSHelper
 
 
@@ -8,6 +11,10 @@ class Operator:
         self.odoo = Odoo()
         self.robonomics = RobonomicsHelper(self.odoo)
         self.robonomics.subscribe()
+        self.ws = WSClient(self.odoo)
+        ws_thread = threading.Thread(target=self.ws.run)
+        ws_thread.daemon = True
+        ws_thread.start()
     
     def get_robonomics_add_user_callback(self) -> None:
         return self.robonomics.add_user_callback

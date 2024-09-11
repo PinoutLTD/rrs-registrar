@@ -56,11 +56,10 @@ class WSClient:
                 for description in descriptions_list:
                     ticket_id = self.odoo.find_ticket_with_description(description, email)
                     if not ticket_id:
-                        ticket_id = self.odoo.create_ticket(email, sender_address, description, priority)
-                
-                if logs_hashes:
-                    for hash in logs_hashes:
-                        self.odoo.create_note_with_logs_hash(ticket_id, hash)
+                        ticket_id = self.odoo.create_ticket(email, sender_address, description, priority)    
+                    if logs_hashes:
+                        for hash in logs_hashes:
+                            self.odoo.create_note_with_logs_hash(ticket_id, hash)
             else:
                 self._logger.debug(f"Address {sender_address} is not registred in Odoo. Email is: {email}")
 

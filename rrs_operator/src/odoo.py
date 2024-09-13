@@ -6,6 +6,12 @@ from tenacity import *
 from helpers.logger import Logger
 from helpers.odoo import OdooHelper
 from rrs_operator.utils.format_hash_str import format_hash
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+ODOO_HELPDESK_NEW_STAGE_ID = os.getenv("ODOO_HELPDESK_NEW_STAGE_ID")
+ODOO_HELPDESK_INPROGRESS_STAGE_ID = os.getenv("ODOO_HELPDESK_INPROGRESS_STAGE_ID")
 
 
 class Odoo:
@@ -102,7 +108,11 @@ class Odoo:
         description = f"Issue from HA: {description}"
         self._logger.debug(f"Looking for a ticket for email: {email}, description: {description}")
         ticket_ids = self.helper.search(
-            model="helpdesk.ticket", search_domains=[("description", "=", description), ("partner_email", "=", email)]
+            model="helpdesk.ticket", search_domains=[
+                ("description", "=", description), 
+                ("partner_email", "=", email), 
+                ("stage_id", "in", [ODOO_HELPDESK_NEW_STAGE_ID, ODOO_HELPDESK_INPROGRESS_STAGE_ID])
+            ]
         )
         self._logger.debug(f"Ticket ids: {ticket_ids}")
 

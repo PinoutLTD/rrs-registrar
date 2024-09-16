@@ -111,7 +111,7 @@ class Odoo:
             model="helpdesk.ticket", search_domains=[
                 ("description", "=", description), 
                 ("partner_email", "=", email), 
-                ("stage_id", "in", [ODOO_HELPDESK_NEW_STAGE_ID, ODOO_HELPDESK_INPROGRESS_STAGE_ID])
+                ("stage_id", "in", [int(ODOO_HELPDESK_NEW_STAGE_ID), int(ODOO_HELPDESK_INPROGRESS_STAGE_ID)])
             ]
         )
         self._logger.debug(f"Ticket ids: {ticket_ids}")

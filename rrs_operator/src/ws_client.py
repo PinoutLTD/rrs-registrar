@@ -50,13 +50,17 @@ class WSClient:
             if email:
                 report_manager = ReportManager(sender_address, json_report_message)
                 report_manager.process_report()
-                descriptions_list, priority = report_manager.get_description_and_priority()
+                descriptions_list, priority, source = report_manager.get_description_and_priority()
                 logs_hashes = report_manager.get_logs_hashes()
-                self._logger.debug(f"Data from ipfs: {email}, {descriptions_list}, priority: {priority}")
+                self._logger.debug(f"Data from ipfs: {email}, {descriptions_list}, priority: {priority}, source: {source}")
                 for description in descriptions_list:
-                    ticket_id = self.odoo.find_ticket_with_description(description, email)
+                    if (source == "devices") or (source == ""):
+                        ticket_id = self.odoo.find_ticket_with_description(description, email)
+                    else:
+                        ticket_id = self.odoo.find_ticket_with_source(source, email)
                     if not ticket_id:
-                        ticket_id = self.odoo.create_ticket(email, sender_address, description, priority)    
+                        ticket_id = self.odoo.create_ticket(email, sender_address, description, priority, source)
+                
                     if logs_hashes:
                         for hash in logs_hashes:
                             self.odoo.create_note_with_logs_hash(ticket_id, hash)

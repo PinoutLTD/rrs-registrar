@@ -22,7 +22,7 @@ class Odoo:
 
     @retry(wait=wait_fixed(5))
     def create_ticket(
-        self, email: str, robonomics_address: str, description: str, priority: str
+        self, email: str, robonomics_address: str, description: str, priority: str, source: str
     ) -> tp.Optional[int]:
         """Creates ticket in Helpdesk module
 
@@ -46,6 +46,8 @@ class Odoo:
                     "priority": priority,
                     "channel_id": channel_id,
                     "partner_email": email,
+                    "source": source,
+                    "count": 1
                 },
             )
             self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
@@ -118,6 +120,24 @@ class Odoo:
 
         if ticket_ids:
             self._logger.debug(f"Found tickets with the description: {ticket_ids}")
+            return ticket_ids[0]
+        self._logger.debug(f"No ticket found")
+
+    def find_ticket_with_source(self, source: str, email: str) -> int:
+        """ """
+        self._logger.debug(f"Looking for a ticket for email: {email}, source: {source}")
+        ticket_ids = self.helper.search(
+            model="helpdesk.ticket", search_domains=[
+                ("source", "=", str(source)), 
+                ("partner_email", "=", email),
+                ("stage_id", "in", [int(ODOO_HELPDESK_NEW_STAGE_ID), int(ODOO_HELPDESK_INPROGRESS_STAGE_ID)])
+            ]
+        )
+        
+        self._logger.debug(f"Ticket ids: {ticket_ids}")
+
+        if ticket_ids:
+            self._logger.debug(f"Found tickets with the source: {ticket_ids}")
             return ticket_ids[0]
         self._logger.debug(f"No ticket found")
 

@@ -11,6 +11,9 @@ from utils.decryption import decrypt_message
 
 logs_name = ["issue_description.json", "home-assistant.log", "trace.saved_traces"]
 DESCRIPTION_FILE_NAME = "issue_description.json"
+STR_REPORT_TYPE = "str"
+JSON_REPORT_TYPE = "json"
+NO_LOGS_REPORT_TYPE = "no-logs"
 
 class ReportManager:
     def __init__(self, sender_public_key: str, report_msg: str) -> None:
@@ -40,17 +43,21 @@ class ReportManager:
 
     def process_report(self):
         report_msg_type = self._defind_type_of_report_message()
-        if report_msg_type == "json":
+        if report_msg_type == JSON_REPORT_TYPE:
             self._handle_json_report()
+        elif report_msg_type == NO_LOGS_REPORT_TYPE:
+            self._handle_report_without_logs()
         else:
             self._handle_str_report()
 
     def _defind_type_of_report_message(self):
         try:
-            json.loads(self.report_msg)
-            return "json"
+            report_dict = json.loads(self.report_msg)
+            if len(report_dict) == 1:
+                return NO_LOGS_REPORT_TYPE
+            return JSON_REPORT_TYPE
         except json.decoder.JSONDecodeError:
-            return "str"
+            return STR_REPORT_TYPE
     
     @retry(wait=wait_fixed(10))
     def _handle_json_report(self):
@@ -74,6 +81,11 @@ class ReportManager:
             if not(log == DESCRIPTION_FILE_NAME):
                 self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
                 self.ipfs.pin_file(path_to_saved_file)
+    
+    def _handle_report_without_logs(self) -> str:
+        self._logger.debug(f"Handling no-log report")
+        encrypted_description = json.loads(self.report_msg)[DESCRIPTION_FILE_NAME]
+        path_to_saved_file = self._save_decrypted_logs(encrypted_content=encrypted_description, file_name=DESCRIPTION_FILE_NAME)
     
     def _save_decrypted_logs(self, encrypted_content: str, file_name: str):
         decrypted_content = decrypt_message(encrypted_content, self.sender_public_key, self._logger)

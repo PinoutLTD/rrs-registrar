@@ -1,19 +1,12 @@
 import json
 
-from tenacity import *
-
 from helpers.logger import Logger
-from helpers.pinata import PinataHelper
 from rrs_operator.utils.files_helper import FilesHelper
 from rrs_operator.utils.ipfs_helper import IPFSHelper
-from rrs_operator.utils.reports import ReportsFabric
-from utils.decryption import decrypt_message
+from rrs_operator.utils.reports_problem_type import ReportsProblemTypeFabric
+from rrs_operator.utils.reports_format_type import ReportsFormatTypeFabric
 
-logs_name = ["issue_description.json", "home-assistant.log", "trace.saved_traces"]
 DESCRIPTION_FILE_NAME = "issue_description.json"
-STR_REPORT_TYPE = "str"
-JSON_REPORT_TYPE = "json"
-NO_LOGS_REPORT_TYPE = "no-logs"
 
 class ReportManager:
     def __init__(self, sender_public_key: str, report_msg: str) -> None:
@@ -32,7 +25,7 @@ class ReportManager:
             else:
                 description_type = "errors"
                 unparsed_description = issue["description"]
-            report = ReportsFabric.get_report(description_type)
+            report = ReportsProblemTypeFabric.get_report(description_type)
             description = report.get_descriptions(unparsed_description)
             priority = report.get_priority()
         FilesHelper.remove_directory(self._temp_dir)
@@ -42,52 +35,5 @@ class ReportManager:
         return self.ipfs.logs_hashes
 
     def process_report(self):
-        report_msg_type = self._defind_type_of_report_message()
-        if report_msg_type == JSON_REPORT_TYPE:
-            self._handle_json_report()
-        elif report_msg_type == NO_LOGS_REPORT_TYPE:
-            self._handle_report_without_logs()
-        else:
-            self._handle_str_report()
-
-    def _defind_type_of_report_message(self):
-        try:
-            report_dict = json.loads(self.report_msg)
-            if len(report_dict) == 1:
-                return NO_LOGS_REPORT_TYPE
-            return JSON_REPORT_TYPE
-        except json.decoder.JSONDecodeError:
-            return STR_REPORT_TYPE
-    
-    @retry(wait=wait_fixed(10))
-    def _handle_json_report(self):
-        self._logger.debug("Handling json report.")
-        dict_with_logs = json.loads(self.report_msg)
-        for k, v in dict_with_logs.items():
-            encrypted_content = PinataHelper.download_file(hash=v, logger=self._logger)
-            path_to_saved_file = self._save_decrypted_logs(encrypted_content=encrypted_content, file_name=k)
-            if not(k == DESCRIPTION_FILE_NAME):
-                self._logger.debug("Unppining logs file from Pinata...")
-                PinataHelper.unpin_file(hash=v, logger=self._logger)
-                self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
-                self.ipfs.pin_file(path_to_saved_file)
-
-    @retry(wait=wait_fixed(10))
-    def _handle_str_report(self):
-        self._logger.debug("Handling string report.")
-        for log in logs_name:
-            encrypted_content = PinataHelper.download_file_from_directory(hash=self.report_msg, logger=self._logger, file_name=log)
-            path_to_saved_file = self._save_decrypted_logs(encrypted_content=encrypted_content, file_name=log)
-            if not(log == DESCRIPTION_FILE_NAME):
-                self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
-                self.ipfs.pin_file(path_to_saved_file)
-    
-    def _handle_report_without_logs(self) -> str:
-        self._logger.debug(f"Handling no-log report")
-        encrypted_description = json.loads(self.report_msg)[DESCRIPTION_FILE_NAME]
-        path_to_saved_file = self._save_decrypted_logs(encrypted_content=encrypted_description, file_name=DESCRIPTION_FILE_NAME)
-    
-    def _save_decrypted_logs(self, encrypted_content: str, file_name: str):
-        decrypted_content = decrypt_message(encrypted_content, self.sender_public_key, self._logger)
-        path_to_saved_file = FilesHelper.create_and_save_file(decrypted_content, self._temp_dir, file_name)
-        return path_to_saved_file
+        report = ReportsFormatTypeFabric.get_report(report_msg=self.report_msg, logger=self._logger, ipfs=self.ipfs)
+        report.handle_report(self.report_msg, self.sender_address, self._temp_dir)

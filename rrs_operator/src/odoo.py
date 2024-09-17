@@ -6,6 +6,12 @@ from tenacity import *
 from helpers.logger import Logger
 from helpers.odoo import OdooHelper
 from rrs_operator.utils.format_hash_str import format_hash
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+ODOO_HELPDESK_NEW_STAGE_ID = os.getenv("ODOO_HELPDESK_NEW_STAGE_ID")
+ODOO_HELPDESK_INPROGRESS_STAGE_ID = os.getenv("ODOO_HELPDESK_INPROGRESS_STAGE_ID")
 
 
 class Odoo:
@@ -16,7 +22,7 @@ class Odoo:
 
     @retry(wait=wait_fixed(5))
     def create_ticket(
-        self, email: str, robonomics_address: str, description: str, priority: str
+        self, email: str, robonomics_address: str, description: str, priority: str, source: str
     ) -> tp.Optional[int]:
         """Creates ticket in Helpdesk module
 
@@ -40,6 +46,8 @@ class Odoo:
                     "priority": priority,
                     "channel_id": channel_id,
                     "partner_email": email,
+                    "source": source,
+                    "count": 1
                 },
             )
             self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
@@ -102,12 +110,34 @@ class Odoo:
         description = f"Issue from HA: {description}"
         self._logger.debug(f"Looking for a ticket for email: {email}, description: {description}")
         ticket_ids = self.helper.search(
-            model="helpdesk.ticket", search_domains=[("description", "=", description), ("partner_email", "=", email)]
+            model="helpdesk.ticket", search_domains=[
+                ("description", "=", description), 
+                ("partner_email", "=", email), 
+                ("stage_id", "in", [int(ODOO_HELPDESK_NEW_STAGE_ID), int(ODOO_HELPDESK_INPROGRESS_STAGE_ID)])
+            ]
         )
         self._logger.debug(f"Ticket ids: {ticket_ids}")
 
         if ticket_ids:
             self._logger.debug(f"Found tickets with the description: {ticket_ids}")
+            return ticket_ids[0]
+        self._logger.debug(f"No ticket found")
+
+    def find_ticket_with_source(self, source: str, email: str) -> int:
+        """ """
+        self._logger.debug(f"Looking for a ticket for email: {email}, source: {source}")
+        ticket_ids = self.helper.search(
+            model="helpdesk.ticket", search_domains=[
+                ("source", "=", str(source)), 
+                ("partner_email", "=", email),
+                ("stage_id", "in", [int(ODOO_HELPDESK_NEW_STAGE_ID), int(ODOO_HELPDESK_INPROGRESS_STAGE_ID)])
+            ]
+        )
+        
+        self._logger.debug(f"Ticket ids: {ticket_ids}")
+
+        if ticket_ids:
+            self._logger.debug(f"Found tickets with the source: {ticket_ids}")
             return ticket_ids[0]
         self._logger.debug(f"No ticket found")
 
@@ -118,3 +148,40 @@ class Odoo:
         hashes = [msg["body"] for msg in messages if msg["body"].startswith("<p>Qm")]
         hashes = [format_hash(hash) for hash in hashes]
         return hashes
+    
+    @retry(wait=wait_fixed(5))
+    def get_and_increase_problem_counter(self, ticket_id: int):
+        counter = self.helper.read("helpdesk.ticket", [ticket_id], ["count"])[0]["count"]
+        self._logger.debug(f"Updating counter for ticket {ticket_id}... Current counter is: {counter}")
+        try: 
+            return self.helper.update(
+                "helpdesk.ticket",
+                ticket_id,
+                {
+                    "count": int(counter)+1,
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update counter {e}")
+            raise Exception("Failed to update counter")
+        
+    @retry(wait=wait_fixed(5))
+    def get_and_update_description(self, ticket_id: int, new_description: str) -> bool:
+        current_description = self.get_description_from_ticket(ticket_id)
+        self._logger.debug(f"Updating description for ticket {ticket_id}... Current description is: {current_description}")
+        try: 
+            return self.helper.update(
+                "helpdesk.ticket",
+                ticket_id,
+                {
+                    "description": f"{current_description} {new_description}",
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update description {e}")
+            raise Exception("Failed to update description")
+    
+    @retry(wait=wait_fixed(5))
+    def get_description_from_ticket(self, ticket_id: int) -> str:
+        description = self.helper.read("helpdesk.ticket", [ticket_id], ["description"])[0]["description"]
+        return description

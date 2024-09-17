@@ -1,7 +1,7 @@
 from .src import ErrorsReport, Report, UnrespondedDevicesReport, WarningsReport
 
 
-class ReportsFabric:
+class ReportsProblemTypeFabric:
     """Fabric to select Report based on its type"""
 
     @staticmethod

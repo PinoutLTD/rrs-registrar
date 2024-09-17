@@ -164,3 +164,24 @@ class Odoo:
         except Exception as e:
             self._logger.error(f"Couldn't update counter {e}")
             raise Exception("Failed to update counter")
+        
+    @retry(wait=wait_fixed(5))
+    def get_and_update_description(self, ticket_id: int, new_description: str) -> bool:
+        current_description = self.get_description_from_ticket(ticket_id)
+        self._logger.debug(f"Updating description for ticket {ticket_id}... Current description is: {current_description}")
+        try: 
+            return self.helper.update(
+                "helpdesk.ticket",
+                ticket_id,
+                {
+                    "description": f"{current_description} {new_description}",
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update description {e}")
+            raise Exception("Failed to update description")
+    
+    @retry(wait=wait_fixed(5))
+    def get_description_from_ticket(self, ticket_id: int) -> str:
+        description = self.helper.read("helpdesk.ticket", [ticket_id], ["description"])[0]["description"]
+        return description

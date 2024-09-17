@@ -148,3 +148,19 @@ class Odoo:
         hashes = [msg["body"] for msg in messages if msg["body"].startswith("<p>Qm")]
         hashes = [format_hash(hash) for hash in hashes]
         return hashes
+    
+    @retry(wait=wait_fixed(5))
+    def get_and_increase_problem_counter(self, ticket_id: int):
+        counter = self.helper.read("helpdesk.ticket", [ticket_id], ["count"])[0]["count"]
+        self._logger.debug(f"Updating counter for ticket {ticket_id}... Current counter is: {counter}")
+        try: 
+            return self.helper.update(
+                "helpdesk.ticket",
+                ticket_id,
+                {
+                    "count": int(counter)+1,
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update counter {e}")
+            raise Exception("Failed to update counter")

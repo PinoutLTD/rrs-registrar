@@ -58,7 +58,9 @@ class WSClient:
                         ticket_id = self.odoo.find_ticket_with_description(description, email)
                     else:
                         ticket_id = self.odoo.find_ticket_with_source(source, email)
-                    if not ticket_id:
+                    if ticket_id:
+                        self.odoo.get_and_increase_problem_counter(ticket_id)
+                    else:
                         ticket_id = self.odoo.create_ticket(email, sender_address, description, priority, source)
                 
                     if logs_hashes:

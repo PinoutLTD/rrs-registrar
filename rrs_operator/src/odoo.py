@@ -189,17 +189,17 @@ class Odoo:
         return description
 
     @retry(wait=wait_fixed(5))
-    def set_last_occured(self, ticket_id: int) -> bool:
+    def set_last_occurred(self, ticket_id: int) -> bool:
         current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        self._logger.debug(f"Updating last occured for ticket {ticket_id}... Current date: {current_datetime}")
+        self._logger.debug(f"Updating last occurred for ticket {ticket_id}... Current date: {current_datetime}")
         try: 
             return self.helper.update(
                 "helpdesk.ticket",
                 ticket_id,
                 {
-                    "last_occured": f"{current_datetime}",
+                    "last_occurred": f"{current_datetime}",
                 },
             )
         except Exception as e:
-            self._logger.error(f"Couldn't update last occured {e}")
-            raise Exception("Failed to update last occured")
+            self._logger.error(f"Couldn't update last occurred {e}")
+            raise Exception("Failed to update last occurred")

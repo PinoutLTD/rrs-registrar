@@ -12,6 +12,7 @@ import os
 load_dotenv()
 ODOO_HELPDESK_NEW_STAGE_ID = os.getenv("ODOO_HELPDESK_NEW_STAGE_ID")
 ODOO_HELPDESK_INPROGRESS_STAGE_ID = os.getenv("ODOO_HELPDESK_INPROGRESS_STAGE_ID")
+ODOO_LOGS_LINK_FORMAT = os.getenv("ODOO_LOGS_LINK_FORMAT")
 
 
 class Odoo:
@@ -141,11 +142,12 @@ class Odoo:
             return ticket_ids[0]
         self._logger.debug(f"No ticket found")
 
+    @retry(wait=wait_fixed(5))
     def get_hashes_from_ticket(self, ticket_id: int) -> list:
         self._logger.debug(f"Looking for ipfs hashes in ticket {ticket_id}")
         message_ids = self.helper.search(model="mail.message", search_domains=[("model", "=", "helpdesk.ticket"), ("res_id", "=", ticket_id)])
         messages = self.helper.read(model="mail.message", record_ids=[message_ids], fields=["id", "body"])
-        hashes = [msg["body"] for msg in messages if msg["body"].startswith("<p>Qm")]
+        hashes = [msg["body"] for msg in messages if msg["body"].startswith(f"<p>{ODOO_LOGS_LINK_FORMAT}Qm")]
         hashes = [format_hash(hash) for hash in hashes]
         return hashes
     

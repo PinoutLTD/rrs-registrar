@@ -1,7 +1,7 @@
-import base64
 import typing as tp
 
 from tenacity import *
+from datetime import datetime
 
 from helpers.logger import Logger
 from helpers.odoo import OdooHelper
@@ -12,6 +12,7 @@ import os
 load_dotenv()
 ODOO_HELPDESK_NEW_STAGE_ID = os.getenv("ODOO_HELPDESK_NEW_STAGE_ID")
 ODOO_HELPDESK_INPROGRESS_STAGE_ID = os.getenv("ODOO_HELPDESK_INPROGRESS_STAGE_ID")
+ODOO_LOGS_LINK_FORMAT = os.getenv("ODOO_LOGS_LINK_FORMAT")
 
 
 class Odoo:
@@ -141,11 +142,12 @@ class Odoo:
             return ticket_ids[0]
         self._logger.debug(f"No ticket found")
 
+    @retry(wait=wait_fixed(5))
     def get_hashes_from_ticket(self, ticket_id: int) -> list:
         self._logger.debug(f"Looking for ipfs hashes in ticket {ticket_id}")
         message_ids = self.helper.search(model="mail.message", search_domains=[("model", "=", "helpdesk.ticket"), ("res_id", "=", ticket_id)])
         messages = self.helper.read(model="mail.message", record_ids=[message_ids], fields=["id", "body"])
-        hashes = [msg["body"] for msg in messages if msg["body"].startswith("<p>Qm")]
+        hashes = [msg["body"] for msg in messages if msg["body"].startswith(f"<p>{ODOO_LOGS_LINK_FORMAT}Qm")]
         hashes = [format_hash(hash) for hash in hashes]
         return hashes
     
@@ -185,3 +187,19 @@ class Odoo:
     def get_description_from_ticket(self, ticket_id: int) -> str:
         description = self.helper.read("helpdesk.ticket", [ticket_id], ["description"])[0]["description"]
         return description
+
+    @retry(wait=wait_fixed(5))
+    def set_last_occurred(self, ticket_id: int) -> bool:
+        current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self._logger.debug(f"Updating last occurred for ticket {ticket_id}... Current date: {current_datetime}")
+        try: 
+            return self.helper.update(
+                "helpdesk.ticket",
+                ticket_id,
+                {
+                    "last_occurred": f"{current_datetime}",
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update last occurred {e}")
+            raise Exception("Failed to update last occurred")

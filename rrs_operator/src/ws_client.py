@@ -60,6 +60,7 @@ class WSClient:
                         ticket_id = self.odoo.find_ticket_with_source(source, email)
                     if ticket_id:
                         self.odoo.get_and_increase_problem_counter(ticket_id)
+                        self.odoo.set_last_occurred(ticket_id)
                         current_description = self.odoo.get_description_from_ticket(ticket_id)
                         self._logger.debug(f"Current description: {current_description}")
                         if description in current_description:

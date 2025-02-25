@@ -8,8 +8,10 @@ from dotenv import load_dotenv
 from helpers.logger import Logger
 from helpers.pinata import PinataHelper
 from registar.utils.messages import (message_for_subscribing,
-                                     message_with_pinata_creds)
+                                     message_with_pinata_creds, 
+                                     message_with_robonomics_address)
 from registar.utils.robonomics import add_device_to_subscription
+from registar.utils.message_manager import MessageManager
 from utils.decryption import decrypt_message
 
 load_dotenv()
@@ -55,33 +57,9 @@ class WSClient:
         if "peerId" in json_message:
             return
         message_data = json_message["data"]
-        if "email" in message_data:
-            encrypted_email = message_data["email"]
-            sender_address = message_data["sender_address"]
-            decrypted_email = decrypt_message(encrypted_email, sender_address, self._logger)
-            rrs_user_id = self.odoo.check_if_rrs_user_exists(sender_address)
-            if rrs_user_id:
-                pinata_key, pinata_secret = self.odoo.retrieve_pinata_creds(sender_address, rrs_user_id)
-                if pinata_key:
-                    msg = message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger)
-                    self.ws.send(msg)
-                    return
-            user_id = self.odoo.create_rrs_user(decrypted_email, sender_address)
-            if PAID_SERVICE:
-                self._logger.debug(f"Paid service. Adding account to subscription")
-                tx_hash = add_device_to_subscription(sender_address)
-                if tx_hash:
-                    self._logger.debug(f"Add {sender_address} to subscription")
-                else:
-                    self._logger.error(f"Couldn't add {sender_address} to subscription: {tx_hash}")
-
-            pinata_keys = PinataHelper.generate_pinata_keys(sender_address)
-            pinata_key = pinata_keys["pinata_api_key"]
-            pinata_secret = pinata_keys["pinata_api_secret"]
-            self._logger.debug(f"Pinata creds: {pinata_key}, {pinata_secret}, {pinata_keys}")
-            self.odoo.update_rrs_user_with_pinata_creds(user_id, pinata_key, pinata_secret)
-            msg = message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger)
-            self.ws.send(msg)
+        message_manager = MessageManager(self.odoo)
+        msg = message_manager.select_formatter(message_data)
+        self.ws.send(msg)
 
     def _on_error(self, ws, error):
         self._logger.error(f"{error}")

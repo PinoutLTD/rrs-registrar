@@ -70,6 +70,7 @@ class Odoo:
     def retrieve_pinata_creds(self, sender_address: str, rrs_user_id: int) -> tuple:
         """Retrieve pinata creds.
         :param sender_address: Customer's address in Robonomics parachain
+        :param rrs_user_id: User id in RRS module.
 
         :return: The Pinata creds or None.
         """
@@ -85,3 +86,12 @@ class Odoo:
         except Exception as e:
             self._logger.error(f"Couldn't get pinata creds for user: {sender_address}")
             raise Exception(f"Couldn't  retrieve pinata creds for {sender_address}")
+        
+    @retry(wait=wait_fixed(5))
+    def is_paid(self, rrs_user_id: int) -> bool:
+        """Check if the customer has paid for the service.
+        :param address: rrs_user_id: User id in RRS module.
+
+        :return: bool
+        """
+        return self.helper.read("rrs.register", [rrs_user_id], ["paid_service"])[0]["paid_service"]

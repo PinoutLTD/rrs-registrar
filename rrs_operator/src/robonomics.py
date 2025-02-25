@@ -6,7 +6,7 @@ import robonomicsinterface as ri
 from dotenv import load_dotenv
 
 from helpers.logger import Logger
-from rrs_operator.src.report_manager import ReportManager
+from rrs_operator.utils.report_manager import ReportManager
 
 load_dotenv()
 

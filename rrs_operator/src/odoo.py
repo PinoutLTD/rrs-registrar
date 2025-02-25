@@ -203,3 +203,14 @@ class Odoo:
         except Exception as e:
             self._logger.error(f"Couldn't update last occurred {e}")
             raise Exception("Failed to update last occurred")
+    
+    @retry(wait=wait_fixed(5))
+    def is_paid(self, address: int) -> bool:
+        """Check if the customer has paid for the service.
+        :param address: User's address in Robonomics parachain
+
+        :return: bool
+        """
+        user_id = self._find_user_id(address)
+        if user_id:
+            return self.helper.read("rrs.register", user_id, ["paid_service"])[0]["paid_service"]

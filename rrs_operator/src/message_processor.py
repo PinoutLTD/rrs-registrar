@@ -32,6 +32,7 @@ class MessageProcessor:
         sender_address = message_data.get("address")
         json_report_message = json.dumps(message_data["report"])
         email = self.odoo.find_user_email(sender_address)
+        report_id = message_data["report"]["id"]
 
         if not email:
             self._logger.debug(f"Address {sender_address} is not registered in Odoo.")
@@ -59,7 +60,7 @@ class MessageProcessor:
             free_hashes = HashCache.get_hashes(sender_address)
             for hash in free_hashes:
                 PinataHelper.unpin_file(hash, self._logger)
-        return message_report_response(datalog=is_paid, ticket_ids=ticket_ids, sender_address=sender_address)
+        return message_report_response(datalog=is_paid, ticket_ids=ticket_ids, sender_address=sender_address, id=report_id)
 
 
     def _get_issue(self) -> dict:

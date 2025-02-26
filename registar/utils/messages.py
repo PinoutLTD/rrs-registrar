@@ -10,7 +10,7 @@ def message_with_pinata_creds(pinata_key: str, pinata_secret: str, sender_addres
     pinata_key_encrypted = encrypt_for_users(pinata_key, [sender_address], logger)
     pinata_secret_encrypted = encrypt_for_users(pinata_secret, [sender_address], logger)
     msg = {
-        "protocol": f"/pinataCreds/{sender_address}",
+        "protocol": f"/initialization/{sender_address}",
         "serverPeerId": "",
         "save_data": False,
         "data": {"data": {"public": pinata_key_encrypted, "private": pinata_secret_encrypted, "paid": paid}},

@@ -4,7 +4,7 @@ class HashCache:
     _cache: tp.Dict[str, tp.Set[str]] = {}
 
     @classmethod
-    def store_hashes(cls, sender_address: str, hashes: tp.List[str]) -> None:
+    def store_hash(cls, sender_address: str, hashes: tp.List[str]) -> None:
         """Stores hashes for a given sender address."""
         if sender_address not in cls._cache:
             cls._cache[sender_address] = set()
@@ -16,7 +16,7 @@ class HashCache:
         return cls._cache.get(sender_address, set())
 
     @classmethod
-    def remove_hashes(cls, sender_address: str, hashes: List[str]) -> None:
+    def remove_hashes(cls, sender_address: str, hashes: tp.List[str]) -> None:
         """Removes specific hashes from the cache for a sender address."""
         if sender_address in cls._cache:
             cls._cache[sender_address] -= set(hashes)

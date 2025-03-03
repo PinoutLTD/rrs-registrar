@@ -19,10 +19,11 @@ class MessageManager:
         self._logger = Logger("MessageManager")
 
     def select_formatter(self, msg) -> str:
-        sender_address = msg["sender_address"]
         if "new_client" in msg:
+            sender_address = msg["new_client"]
             return message_with_robonomics_address(sender_address)
         if "email" in msg:
+            sender_address = msg["address"]
             email = self._decrypt_email(msg)
             rrs_user_id = self.odoo.check_if_rrs_user_exists(sender_address)
             if rrs_user_id:
@@ -32,11 +33,12 @@ class MessageManager:
                 user_id = self._create_new_rrs_user(email, sender_address)
                 pinata_key, pinata_secret = self._generate_and_store_pinata_keys(user_id, sender_address)
                 paid = False
+                
             return message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger, paid)
 
     
     def _decrypt_email(self, msg: dict) -> str:
-        return decrypt_message(msg["email"], msg["sender_address"], self._logger)
+        return decrypt_message(msg["email"], msg["address"], self._logger)
 
     def _get_existing_user_credentials(self, sender_address, rrs_user_id):
         """Retrieves and sends Pinata credentials for an existing user."""

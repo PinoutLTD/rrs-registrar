@@ -9,41 +9,29 @@ from substrateinterface import Keypair, KeypairType
 load_dotenv()
 ADMIN_SEED = os.getenv("ADMIN_SEED")
 
-
-def decrypt_message(data: tp.Union[str, dict], sender_address: str, logger) -> str:
-    """Decrypt message that was encrypted fo devices
-
-    :param data: Ancrypted data
-    :param sender_address: Sender address
-    :param recipient_keypair: Recepient account keypair
-
-    :return: Decrypted message
-    """
+def decrypt_message(encrypted_message: str, sender_address: str, logger) -> str:
+    recipient_acc = Account(ADMIN_SEED, crypto_type=KeypairType.ED25519)
+    sender_kp = Keypair(ss58_address=sender_address)
     try:
-        account = Account(ADMIN_SEED, crypto_type=KeypairType.ED25519)
-        admin_keypair = account.keypair
-        sender_public_key = Keypair(ss58_address=sender_address, crypto_type=KeypairType.ED25519).public_key
-        logger.debug(f"Start decrypt for device {admin_keypair.ss58_address}")
-        if isinstance(data, str):
-            data_json = json.loads(data)
-        else:
-            data_json = data
-        if admin_keypair.ss58_address in data_json:
+        data_json = json.loads(encrypted_message)
+    except:
+        return _decrypt_message(encrypted_message, sender_kp.public_key, recipient_acc.keypair).decode("utf-8")
+    try:
+        if recipient_acc.get_address() in data_json:
             decrypted_seed = _decrypt_message(
-                data_json[admin_keypair.ss58_address],
-                sender_public_key,
-                admin_keypair,
+                data_json[recipient_acc.get_address()],
+                sender_kp.public_key,
+                recipient_acc.keypair,
             ).decode("utf-8")
             decrypted_acc = Account(decrypted_seed, crypto_type=KeypairType.ED25519)
-            decrypted_data = _decrypt_message(data_json["data"], sender_public_key, decrypted_acc.keypair).decode(
-                "utf-8"
-            )
+            decrypted_data = _decrypt_message(
+                data_json["data"], sender_kp.public_key, decrypted_acc.keypair
+            ).decode("utf-8")
             return decrypted_data
         else:
             logger.error(f"Error in decrypt for devices: account is not in devices")
     except Exception as e:
         logger.error(f"Exception in decrypt for devices: {e}")
-
 
 def _decrypt_message(encrypted_message: str, sender_public_key: bytes, admin_keypair) -> str:
     """Decrypt message with recepient private key and sender puplic key

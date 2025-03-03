@@ -32,7 +32,7 @@ class MessageProcessor:
         sender_address = message_data.get("address")
         json_report_message = json.dumps(message_data["report"])
         email = self.odoo.find_user_email(sender_address)
-        report_id = message_data["report"]["id"]
+        report_id = message_data["report"].get("id", "0")
 
         if not email:
             self._logger.debug(f"Address {sender_address} is not registered in Odoo.")

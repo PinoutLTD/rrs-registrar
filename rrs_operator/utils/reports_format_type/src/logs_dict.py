@@ -23,11 +23,10 @@ class LogsDict(Report):
                 path_to_saved_file = self.save_decrypted_logs(encrypted_content=encrypted_content, file_name=k, sender_address=sender_address, temp_dir=temp_dir)
                 self._logger.debug("Unppining logs file from Pinata...")
                 hashes.append(v)
-                HashCash.store_hash(sender_address, v)
                 if not(k == self.DESCRIPTION_FILE_NAME):
                     self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
                     self.ipfs.pin_file(path_to_saved_file)
-            HashCash.store_hash(sender_address, hashes)
+            HashCash.store_hashes(sender_address, hashes)
         except Exception as e:
             self._logger.error(f"Error while handling json report: {e}")
             raise e

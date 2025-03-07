@@ -4,7 +4,7 @@ import json
 from .report import Report
 from helpers.logger import Logger
 from helpers.pinata import PinataHelper
-from rrs_operator.utils.hash_cash import HashCash
+from rrs_operator.utils.hash_cash import HashCache
 
 class LogsDict(Report):
     def __init__(self, logger: Logger, ipfs):
@@ -26,7 +26,7 @@ class LogsDict(Report):
                 if not(k == self.DESCRIPTION_FILE_NAME):
                     self._logger.debug(f"Pinning file {path_to_saved_file} to the IPFS node...")
                     self.ipfs.pin_file(path_to_saved_file)
-            HashCash.store_hashes(sender_address, hashes)
+            HashCache.store_hashes(sender_address, hashes)
         except Exception as e:
             self._logger.error(f"Error while handling json report: {e}")
             raise e

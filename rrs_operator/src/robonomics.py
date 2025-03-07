@@ -44,22 +44,23 @@ class RobonomicsHelper:
 
         :param data: Data from the launch
         """
+        pass
 
-        try:
-            if data[0] in self.users:
-                hash = data[2]
-                self._logger.info(f"Ipfs hash: {hash}")
-                robonomics_address_from = data[0]
-                threading.Thread(
-                    target=self._handle_data,
-                    args=(
-                        hash,
-                        robonomics_address_from,
-                    ),
-                ).start()
+        # try:
+        #     if data[0] in self.users:
+        #         hash = data[2]
+        #         self._logger.info(f"Ipfs hash: {hash}")
+        #         robonomics_address_from = data[0]
+        #         threading.Thread(
+        #             target=self._handle_data,
+        #             args=(
+        #                 hash,
+        #                 robonomics_address_from,
+        #             ),
+        #         ).start()
 
-        except Exception as e:
-            self._logger.error(f"Problem in on new record: {e}")
+        # except Exception as e:
+        #     self._logger.error(f"Problem in on new record: {e}")
 
     def _handle_data(self, report_msg: str, robonomics_address_from: str) -> None:
         """Handle data from the datalog: create ticket and add logs

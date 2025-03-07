@@ -94,4 +94,4 @@ class Odoo:
 
         :return: bool
         """
-        return self.helper.read("rrs.register", [rrs_user_id], ["paid_service"])[0]["paid_service"]
+        return self.helper.read("rrs.register", [rrs_user_id], ["paid"])[0]["paid"]

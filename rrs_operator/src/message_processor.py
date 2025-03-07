@@ -32,7 +32,7 @@ class MessageProcessor:
         sender_address = message_data.get("address")
         json_report_message = json.dumps(message_data["report"])
         email = self.odoo.find_user_email(sender_address)
-        report_id = message_data["report"].get("id", "0")
+        report_id = message_data.get("id", "0")
 
         if not email:
             self._logger.debug(f"Address {sender_address} is not registered in Odoo.")
@@ -53,7 +53,7 @@ class MessageProcessor:
         # **3. Ticket Management**
         ticket_manager = TicketManager(self.odoo)
         logs_hashes = self.ipfs.logs_hashes
-        ticket_ids, is_paid = ticket_manager.process_ticket(descriptions_list, priority, source, email, sender_address, logs_hashes)
+        ticket_ids, is_paid = ticket_manager.process_ticket(descriptions_list=descriptions_list, priority=priority, source=source, email=email, sender_address=sender_address, logs_hashes=logs_hashes)
 
         # **4. Handle Unpinning for Free Users**
         if not is_paid:

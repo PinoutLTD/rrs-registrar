@@ -33,7 +33,6 @@ class MessageManager:
                 user_id = self._create_new_rrs_user(email, sender_address)
                 pinata_key, pinata_secret = self._generate_and_store_pinata_keys(user_id, sender_address)
                 paid = False
-                
             return message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger, paid)
 
     

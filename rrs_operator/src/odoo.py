@@ -19,7 +19,7 @@ class Odoo:
     """Odoo for Operator"""
     def __init__(self) -> None:
         self.helper = OdooHelper("operator")
-        self._logger = Logger("odoo-registar")
+        self._logger = Logger("odoo-operator")
 
     @retry(wait=wait_fixed(5))
     def create_ticket(
@@ -34,7 +34,7 @@ class Odoo:
 
         :return: Ticket id
         """
-
+        self._logger.debug(f"Creating ticket...")
         channel_id = 5
         name = f"Issue from {robonomics_address}"
         description = f"Issue from HA: {description}"
@@ -153,6 +153,7 @@ class Odoo:
     
     @retry(wait=wait_fixed(5))
     def get_and_increase_problem_counter(self, ticket_id: int):
+        self._logger.debug(f"Increasing problem counter...")
         counter = self.helper.read("helpdesk.ticket", [ticket_id], ["count"])[0]["count"]
         self._logger.debug(f"Updating counter for ticket {ticket_id}... Current counter is: {counter}")
         try: 
@@ -169,8 +170,9 @@ class Odoo:
         
     @retry(wait=wait_fixed(5))
     def get_and_update_description(self, ticket_id: int, new_description: str) -> bool:
+        self._logger.debug(f"CUpdating description...")
         current_description = self.get_description_from_ticket(ticket_id)
-        self._logger.debug(f"Updating description for ticket {ticket_id}... Current description is: {current_description}")
+        self._logger.debug(f"Updating description for ticket {ticket_id}...")
         try: 
             return self.helper.update(
                 "helpdesk.ticket",
@@ -185,11 +187,13 @@ class Odoo:
     
     @retry(wait=wait_fixed(5))
     def get_description_from_ticket(self, ticket_id: int) -> str:
+        self._logger.debug(f"Getting description from ticket...")
         description = self.helper.read("helpdesk.ticket", [ticket_id], ["description"])[0]["description"]
         return description
 
     @retry(wait=wait_fixed(5))
     def set_last_occurred(self, ticket_id: int) -> bool:
+        self._logger.debug(f"Setting last occured...")
         current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         self._logger.debug(f"Updating last occurred for ticket {ticket_id}... Current date: {current_datetime}")
         try: 
@@ -205,12 +209,13 @@ class Odoo:
             raise Exception("Failed to update last occurred")
     
     @retry(wait=wait_fixed(5))
-    def is_paid(self, address: int) -> bool:
+    def is_paid(self, address: str) -> bool:
         """Check if the customer has paid for the service.
         :param address: User's address in Robonomics parachain
 
         :return: bool
         """
+        self._logger.debug(f"Checking if is paid...")
         user_id = self._find_user_id(address)
         if user_id:
-            return self.helper.read("rrs.register", user_id, ["paid_service"])[0]["paid_service"]
+            return self.helper.read("rrs.register", user_id, ["paid"])[0]["paid"]

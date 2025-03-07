@@ -9,7 +9,7 @@ def message_report_response(datalog: bool, ticket_ids: list, sender_address: str
     msg = {
         "protocol": f"/report/{sender_address}",
         "serverPeerId": "",
-        "save_data": False, 
-        "data": {"datalog": datalog, "ticket_ids": ticket_ids, "id": id}
+        "save_data": False,
+        "data": {"data": {"datalog": datalog, "ticket_ids": ticket_ids, "id": id}}
     }
     return json.dumps(msg)

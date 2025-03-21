@@ -7,6 +7,7 @@ import requests
 
 from helpers.logger import Logger
 from registar.utils.odoo_requests import save_cid_and_orderid, save_orderid, update_last_paid, set_status_not_paid, setup_new_paid_customer
+from registar.utils.jwt import jwt_required, generate_token
 
 load_dotenv()
 
@@ -77,11 +78,12 @@ class OdooFlaskView(BaseView):
     
     def _prolongation_request(self, cid: str):
         data = {"cid": cid}
-        headers = {"Content-Type": "application/json"}
+        token = generate_token()
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
         response = requests.post(url=f"{PAYMENT_PROVIDER_URL}/prs/prolongation", json=data, headers=headers)
-        print(f"prolongation resp: {response}")
     
     @route("/paymentProvider/saveCustomerData/<email>", methods=["PUT"])
+    @jwt_required
     def save_customer_data_handler(self, email):
         request_data = request.get_json()
         self._logger.debug(f"Data from save_customer_data request: {request_data}")
@@ -93,6 +95,7 @@ class OdooFlaskView(BaseView):
         return Response(status=200)
     
     @route("/paymentProvider/updateOrderId/<cid>", methods=["PUT"])
+    @jwt_required
     def update_orderid_handler(self, cid):
         request_data = request.get_json()
         order_id = request_data.get("order_id")
@@ -103,6 +106,7 @@ class OdooFlaskView(BaseView):
         return Response(status=200)
     
     @route("/paymentProvider/updateLastPaid", methods=["POST"])
+    @jwt_required
     def update_last_paid_handler(self):
         """Webhook for Revolut successful payment"""
         request_data = request.get_json()
@@ -117,6 +121,7 @@ class OdooFlaskView(BaseView):
         return Response(status=200)
 
     @route("/paymentProvider/setUnpaid", methods=["POST"])
+    @jwt_required
     def payment_failed_handler(self):
         """Webhook for Revolut failed payment"""
         request_data = request.get_json()

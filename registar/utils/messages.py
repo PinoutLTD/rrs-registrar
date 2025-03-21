@@ -30,4 +30,3 @@ def message_with_robonomics_address(sender_address: str) -> str:
     }
     return json.dumps(msg)
 
-

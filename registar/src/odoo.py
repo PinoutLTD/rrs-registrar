@@ -1,4 +1,5 @@
 import typing as tp
+from datetime import datetime
 
 from tenacity import *
 
@@ -95,3 +96,112 @@ class Odoo:
         :return: bool
         """
         return self.helper.read("rrs.register", [rrs_user_id], ["paid"])[0]["paid"]
+
+    @retry(wait=wait_fixed(5))
+    def save_cid_and_orderid(self, cid: str, order_id: str, email: str):
+        id = self._find_user_by_email(email)
+        if not id:
+            self._logger.error(f"Couldn't user with email: {email}")
+            return 
+        try: 
+            return self.helper.update(
+                "rrs.register",
+                id[0],
+                {
+                    "revolut_cid": cid,
+                    "revolut_order_id": order_id,
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update user {id} with revolut: {e}")
+            raise Exception("Failed to update the user")
+        
+    @retry(wait=wait_fixed(5))
+    def save_orderid(self, cid: str, order_id: str):
+        id = self._find_user_by_cid(cid)
+        self._logger.debug(f"ORDER ID NEW: {order_id}")
+        if not id:
+            self._logger.error(f"Couldn't user with cid: {cid}")
+            return 
+        try: 
+            return self.helper.update(
+                "rrs.register",
+                id[0],
+                {
+                    "revolut_order_id": order_id,
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update user {id} with order_id: {e}")
+            raise Exception("Failed to update the user")
+    
+    @retry(wait=wait_fixed(5))
+    def update_last_paid(self, order_id: str):
+        id = self._find_user_by_orderid(order_id)
+        if not id:
+            self._logger.error(f"Couldn't user with order_id: {order_id}")
+            return 
+        try: 
+            return self.helper.update(
+                "rrs.register",
+                id[0],
+                {
+                    "paid": True,
+                    "last_paid": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update user {id} with last_paid: {e}")
+            raise Exception("Failed to update the user")
+
+    @retry(wait=wait_fixed(5))
+    def set_status_not_paid(self, order_id: str):
+        id = self._find_user_by_orderid(order_id)
+        if not id:
+            self._logger.error(f"Couldn't user with order_id: {order_id}")
+            return 
+        try: 
+            return self.helper.update(
+                "rrs.register",
+                id[0],
+                {
+                    "paid": False
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't update user {id} with status not paid: {e}")
+            raise Exception("Failed to update the user")
+
+
+    @retry(wait=wait_fixed(5))
+    def _find_user_by_email(self, email: str) -> list:
+        """Find a user id by an email.
+        :param address: User's email
+
+        :return: The list with user id.
+        """
+        id = self.helper.search(model="rrs.register", search_domains=[("customer_email", "=", email)])
+        self._logger.debug(f"Find user with id: {id}")
+        return id
+    
+    @retry(wait=wait_fixed(5))
+    def _find_user_by_cid(self, cid: str) -> list:
+        """Find a user id by an email.
+        :param address: User's email
+
+        :return: The list with user id.
+        """
+        id = self.helper.search(model="rrs.register", search_domains=[("revolut_cid", "=", cid)])
+        self._logger.debug(f"Find user with id: {id}")
+        return id
+
+    @retry(wait=wait_fixed(5))
+    def _find_user_by_orderid(self, order_id: str) -> list:
+        """Find a user id by an email.
+        :param address: User's email
+
+        :return: The list with user id.
+        """
+        id = self.helper.search(model="rrs.register", search_domains=[("revolut_order_id", "=", str(order_id))])
+        self._logger.debug(f"Find user with id: {id}")
+        return id

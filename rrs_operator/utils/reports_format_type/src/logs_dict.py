@@ -31,3 +31,4 @@ class LogsDict(Report):
             self._logger.error(f"Error while handling json report: {e}")
             raise e
 
+

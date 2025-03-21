@@ -57,7 +57,7 @@ class Odoo:
             self._logger.error(f"Couldn't create ticket: {e}")
             raise Exception("Failed to create ticket")
     
-    @retry(wait=wait_fixed(5))
+    # @retry(wait=wait_fixed(5))
     def create_note_with_logs_hash(self, ticket_id: int, ipfs_hash: str) -> None:
         try:
             record = self.helper.create(

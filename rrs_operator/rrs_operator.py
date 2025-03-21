@@ -10,7 +10,7 @@ class Operator:
     def __init__(self) -> None:
         self.odoo = Odoo()
         self.robonomics = RobonomicsHelper(self.odoo)
-        self.robonomics.subscribe()
+        # self.robonomics.subscribe()
         self.ws = WSClient(self.odoo)
         ws_thread = threading.Thread(target=self.ws.run)
         ws_thread.daemon = True

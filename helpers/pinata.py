@@ -15,7 +15,7 @@ class PinataHelper:
     
     @staticmethod
     def download_file(hash: str, logger: Logger) -> str:
-        response = requests.get(f"https://gateway.pinata.cloud/ipfs/{hash}")
+        response = requests.get(f"https://ipfs.io/ipfs/{hash}")
         if response.status_code == 200:
             return response.text
         elif response.status_code == 404:

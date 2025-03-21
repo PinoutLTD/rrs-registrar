@@ -33,7 +33,9 @@ class MessageManager:
                 user_id = self._create_new_rrs_user(email, sender_address)
                 pinata_key, pinata_secret = self._generate_and_store_pinata_keys(user_id, sender_address)
                 paid = False
-            return message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger, paid)
+            msg = message_with_pinata_creds(pinata_key, pinata_secret, sender_address, self._logger, paid)
+            self._logger.debug(f"Msg: {msg}")
+            return msg
 
     
     def _decrypt_email(self, msg: dict) -> str:
@@ -42,6 +44,7 @@ class MessageManager:
     def _get_existing_user_credentials(self, sender_address, rrs_user_id):
         """Retrieves and sends Pinata credentials for an existing user."""
         pinata_key, pinata_secret = self.odoo.retrieve_pinata_creds(sender_address, rrs_user_id)
+        self._logger.debug(f"pinata creds: {pinata_key}, {pinata_secret}")
         if pinata_key:
             return pinata_key, pinata_secret
 

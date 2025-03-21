@@ -44,15 +44,21 @@ class MessageProcessor:
 
         # **2. Determine Problem Type**
         issue = self._get_issue()
+        self._logger.debug(f"Issue: {issue}")
         problem_handler = ReportsProblemTypeFabric.get_report(issue)
+        self._logger.debug(f"problem_handler: {problem_handler}")
         descriptions_list = problem_handler.get_descriptions()
+        self._logger.debug(f"descriptions_list: {descriptions_list}")
         priority = problem_handler.get_priority()
+        self._logger.debug(f"priority: {priority}")
         source = issue["description"].get("source", "")
+        self._logger.debug(f"source: {source}")
         FilesHelper.remove_directory(self._temp_dir)
 
         # **3. Ticket Management**
         ticket_manager = TicketManager(self.odoo)
         logs_hashes = self.ipfs.logs_hashes
+        self._logger.debug(f"logs_hashes: {logs_hashes}")
         ticket_ids, is_paid = ticket_manager.process_ticket(descriptions_list=descriptions_list, priority=priority, source=source, email=email, sender_address=sender_address, logs_hashes=logs_hashes)
 
         # **4. Handle Unpinning for Free Users**

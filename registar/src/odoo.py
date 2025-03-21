@@ -136,11 +136,12 @@ class Odoo:
             raise Exception("Failed to update the user")
     
     @retry(wait=wait_fixed(5))
-    def update_last_paid(self, order_id: str):
-        id = self._find_user_by_orderid(order_id)
+    def update_last_paid(self, order_id: str, id: int = None):
         if not id:
-            self._logger.error(f"Couldn't user with order_id: {order_id}")
-            return 
+            id = self.find_user_by_orderid(order_id)
+            if not id:
+                self._logger.error(f"Couldn't user with order_id: {order_id}")
+                return 
         try: 
             return self.helper.update(
                 "rrs.register",
@@ -156,7 +157,7 @@ class Odoo:
 
     @retry(wait=wait_fixed(5))
     def set_status_not_paid(self, order_id: str):
-        id = self._find_user_by_orderid(order_id)
+        id = self.find_user_by_orderid(order_id)
         if not id:
             self._logger.error(f"Couldn't user with order_id: {order_id}")
             return 
@@ -171,7 +172,42 @@ class Odoo:
         except Exception as e:
             self._logger.error(f"Couldn't update user {id} with status not paid: {e}")
             raise Exception("Failed to update the user")
+    
 
+    @retry(wait=wait_fixed(5))
+    def find_tickets_by_email(self, email: str):
+        try:
+            ticket_ids = self.helper.search(
+                model="helpdesk.ticket", search_domains=[
+                    ("partner_email", "=", email),
+                ]
+            )
+            self._logger.debug(f"Ticket ids: {ticket_ids}")
+            return ticket_ids
+        except Exception as e:
+            self._logger.error(f"Couldn't get tickets for {email}: {e}")
+            raise Exception("Failed to get tickets")
+
+    @retry(wait=wait_fixed(5))
+    def delete_ticket(self, ticket_id: int):
+        try:
+            self._logger.debug("deleting ticket...")
+            return self.helper.unlink("helpdesk.ticket", [ticket_id])
+        except Exception as e:
+            self._logger.error(f"Couldn't unlink ticket {ticket_id}: {e}")
+            raise Exception("Failed to unlink ticket")
+    
+    @retry(wait=wait_fixed(5))
+    def find_email_from_user_id(self, id: int):
+        try:
+            user_data = self.helper.read(model="rrs.register", record_ids=id, fields=["customer_email"])
+            email = user_data[0]['customer_email']
+            self._logger.debug(f"Find user's email: {email}")
+            return email
+        except Exception as e:
+            self._logger.error(f"Couldn't find email for {id}: {e}")
+            raise Exception("Failed to find email")
+        
 
     @retry(wait=wait_fixed(5))
     def _find_user_by_email(self, email: str) -> list:
@@ -196,7 +232,7 @@ class Odoo:
         return id
 
     @retry(wait=wait_fixed(5))
-    def _find_user_by_orderid(self, order_id: str) -> list:
+    def find_user_by_orderid(self, order_id: str) -> list:
         """Find a user id by an email.
         :param address: User's email
 

@@ -113,7 +113,7 @@ class OdooHelper:
         :return: True if the deletion is successful.
         """
         try: 
-            result = self._connection.execute_kw(ODOO_DB, self._uid, ODOO_PASSWORD, model, "unlink", record_ids)
+            result = self._connection.execute_kw(ODOO_DB, self._uid, ODOO_PASSWORD, model, "unlink", [record_ids])
             return result
         except Exception as e:
             self._logger.error(f"Couldn't unlink records {record_ids} in model {model}")

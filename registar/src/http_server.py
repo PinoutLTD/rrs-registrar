@@ -6,7 +6,7 @@ import threading
 import requests
 
 from helpers.logger import Logger
-from registar.utils.odoo_requests import save_cid_and_orderid, save_orderid, update_last_paid, set_status_not_paid
+from registar.utils.odoo_requests import save_cid_and_orderid, save_orderid, update_last_paid, set_status_not_paid, setup_new_paid_customer
 
 load_dotenv()
 
@@ -65,8 +65,13 @@ class OdooFlaskView(BaseView):
         response.headers["Content-Type"] = "text/plain"
         return response
 
-    @route("/odoo/next-payment/<cid>", methods=["GET"])
+    @route("/odoo/next-payment/<cid>", methods=["POST"])
     def next_payment_handler(self, cid):
+        request_data = request.get_json()
+        self._logger.debug(f"Data from next-payment request: {request_data}")
+        paid = request_data.get("paid")
+        if not paid:
+            return
         threading.Thread(target=self._prolongation_request, args=(cid,)).start()
         return Response(status=200)
     
@@ -105,6 +110,9 @@ class OdooFlaskView(BaseView):
         order_id = request_data.get("order_id")
         if not order_id:
             return jsonify({"error": "Order_id is required"}), 400
+        thread1 = threading.Thread(target=setup_new_paid_customer, args=(self.odoo, order_id,self.unpin_logs_from_IPFS_callback))
+        thread1.start()
+        thread1.join(timeout=10)
         threading.Thread(target=update_last_paid, args=(self.odoo, order_id,)).start()
         return Response(status=200)
 

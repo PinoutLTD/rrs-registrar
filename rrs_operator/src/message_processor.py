@@ -66,6 +66,7 @@ class MessageProcessor:
             free_hashes = HashCache.get_hashes(sender_address)
             for hash in free_hashes:
                 PinataHelper.unpin_file(hash, self._logger)
+        HashCache.clear_hashes(sender_address)
         return message_report_response(datalog=is_paid, ticket_ids=ticket_ids, sender_address=sender_address, id=report_id)
 
 

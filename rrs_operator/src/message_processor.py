@@ -64,9 +64,16 @@ class MessageProcessor:
         # **4. Handle Unpinning for Free Users**
         if not is_paid:
             free_hashes = HashCache.get_hashes(sender_address)
+            self._logger.debug(f"Free hashes: {free_hashes}")
             for hash in free_hashes:
+                self._logger.debug(f"Unpinning hash: {hash}")
                 PinataHelper.unpin_file(hash, self._logger)
+                self._logger.debug(f"Hash {hash} unpinned")
         HashCache.clear_hashes(sender_address)
+        if is_paid:
+            self._logger.debug("paid service")
+            # **5. ChatGPT Responses for paid customers**
+            ticket_manager.generate_and_save_solution(email)
         return message_report_response(datalog=is_paid, ticket_ids=ticket_ids, sender_address=sender_address, id=report_id)
 
 

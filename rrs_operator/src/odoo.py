@@ -48,7 +48,9 @@ class Odoo:
                     "channel_id": channel_id,
                     "partner_email": email,
                     "source": source,
-                    "count": 1
+                    "count": 1,
+                    "stage_id": int(ODOO_HELPDESK_NEW_STAGE_ID)
+
                 },
             )
             self._logger.debug(f"Ticket created. Ticket id: {ticket_id}")
@@ -57,7 +59,7 @@ class Odoo:
             self._logger.error(f"Couldn't create ticket: {e}")
             raise Exception("Failed to create ticket")
     
-    # @retry(wait=wait_fixed(5))
+    @retry(wait=wait_fixed(5))
     def create_note_with_logs_hash(self, ticket_id: int, ipfs_hash: str) -> None:
         try:
             record = self.helper.create(
@@ -219,3 +221,46 @@ class Odoo:
         user_id = self._find_user_id(address)
         if user_id:
             return self.helper.read("rrs.register", user_id, ["paid"])[0]["paid"]
+    
+    @retry(wait=wait_fixed(5))
+    def save_chatgpt_solution_to_notes(self, ticket_id: int, response: str) -> None:
+        try:
+            record = self.helper.create(
+                model="mail.message",
+                data={
+                    "body": response,
+                    "model": "helpdesk.ticket",
+                    "res_id": ticket_id,
+                },
+            )
+        except Exception as e:
+            self._logger.error(f"Couldn't create note with chatGPT response: {e}")
+            raise Exception("Failed to create note with chatGPT response")
+    
+    @retry(wait=wait_fixed(5))
+    def create_email_with_chatgpt_solution(self, response: str, email: str, ticket_id: int) -> None:
+        try:
+            body = body = f"""\
+                <html>
+                <body>
+                    <p>Dear User,</p>
+                    <p>Here is an automatic solution for your problem from AI:</p>
+                    {response}
+                    <p>If this solution does not resolve your issue, let us know, and our staff will contact you within <b>24 hours</b> to assist further.</p>
+                    <p>Best regards,<br>Pinout</p>
+                </body>
+                </html>
+                """
+            mail_data = {
+                "subject": f"Automatic Solution for Ticket #{ticket_id}",
+                "email_to": email,
+                "body_html": body,
+            }
+            email_id = self.helper.create(
+                model="mail.mail",
+                data=mail_data    
+            )
+            self._logger.debug(f"Email with AI reponse for ticket has been created, id is: {email_id}")
+        except Exception as e:
+            self._logger.error(f"Couldn't create email with chatGPT response: {e}")
+            raise Exception("Failed to create email with chatGPT response")

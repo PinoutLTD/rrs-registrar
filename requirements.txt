@@ -8,3 +8,5 @@ pinatapy-vourhey==0.2.0
 IPFS-Toolkit==0.5.23
 colorama==0.4.6
 openai==1.70.0
+robonomics-interface==1.6.1
+PyJWT==2.3.0

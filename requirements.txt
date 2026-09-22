@@ -1,4 +1,4 @@
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 websocket-client==1.6.1
 termcolor==2.4.0
 flask-classful==0.16.0
